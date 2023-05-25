@@ -1,0 +1,53 @@
+<code>
+	<target_File file="gui/uss_settings.xml">
+		<!-- Insert code <xmlfile> from <insert> in block <mods> w/o <attrs>-->
+		<root_Node>
+			<mods>
+				<insert>
+					<xmlfile>../unbound/mods/mxport.xml</xmlfile>
+					<attrs>
+						<do_if_not_exist tag="xmlfile" text="mxport.xml"/>
+					</attrs>
+				</insert>
+			</mods>
+		</root_Node>
+	</target_File>
+	<target_File file="gui/unbound/mods/mxport.xml" clear="true">
+		<!-- Create empty file gui/unbound/mods/mxport.xml -->
+		<root_Node>
+			<copy_past>
+				<copy>
+					<block className="LootBoxes"/>
+				</copy>
+				<attrs>
+					<copy_from file="gui/unbound/markup.xml" orig="true"/>
+				</attrs>
+			</copy_past>
+			<find_node tag="block" attr_1="className" value_1="LootBoxes">
+				<block number="3">
+					<block number="1">
+							<replace>
+								<old tag="bind" attr_1="name" value_1="style" attr_2="value" value_2="'marginLeft'; (leftOffset) + 'px'"/>
+								<new>
+									<bind name="style" value="'right'; (leftOffset) + 'px'"/>
+								</new>
+							</replace>
+					</block>
+				</block>
+			</find_node>
+			<find_node tag="block" attr_1="className" value_1="LootBoxes">
+				<block number="3">
+					<block number="2">
+							<replace>
+								<old tag="bind" attr_1="name" value_1="style" attr_2="value" value_2="'right'; (leftOffset) + 'px'"/>
+								<new>
+									<bind name="style" value="'marginLeft'; (leftOffset) + 'px'"/>
+								</new>
+							</replace>
+					</block>
+				</block>
+			</find_node>
+		</root_Node>
+	</target_File>
+	<check name="mxport" version="0.0.12"/>
+</code>
