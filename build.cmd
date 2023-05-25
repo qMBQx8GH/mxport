@@ -59,6 +59,6 @@ cd dist
 
 copy /y nul PnFModsLoader.py
 mkdir PnFMods
-xcopy ..\mxMeter PnFMods\mxPort /i /e
+xcopy ..\mxPort PnFMods\mxPort /i /e
 
 "C:\Program Files\7-Zip\7z.exe" a -r %DESTINATION%\mxport-%VERS%-%REV%.zip PnFMods PnFModsLoader.py
