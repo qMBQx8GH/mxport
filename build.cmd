@@ -43,7 +43,7 @@ echo %DESTINATION%
 
 SET REV=
 for /f "tokens=*" %%i in ('git rev-list --count --first-parent HEAD') do (
-  set /a REV=%%i+100
+  set /a REV=%%i
 )
 echo %REV%
 
