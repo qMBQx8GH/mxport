@@ -30,18 +30,17 @@ files = glob.glob(os.path.join(dist_dir, '*'))
 for f in files:
     os.remove(f)
 
+# Archive name
+target_dir = config['Destination']['folder']
+target_file = 'mxport-' + version + '.zip'
+zip_archive = os.path.join(target_dir, target_file)
+print(zip_archive)
+
 # Make zip archive
 files = glob.glob(os.path.join('mxPort', '**'), recursive=True)
-zip_archive = os.path.join(dist_dir, 'mxport.zip')
 with zipfile.ZipFile(zip_archive, 'w', zipfile.ZIP_DEFLATED) as zipf:
     for file in files:
         if os.path.isfile(file):
             zipf.write(file, os.path.join('PnFMods', file))
     zipf.write('PnFModsLoader.py', 'PnFModsLoader.py')
 
-# Copy archive
-target_dir = config['Destination']['folder']
-target_file = 'mxport-' + version + '.zip'
-target = os.path.join(target_dir, target_file)
-print(target)
-shutil.copy2(zip_archive, target)
