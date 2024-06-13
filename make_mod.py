@@ -3,12 +3,9 @@
 import os
 import sys
 import glob
-import subprocess
 import xml.etree.ElementTree as ET
 import configparser
 import zipfile
-import shutil
-from PIL import Image
 
 config = configparser.ConfigParser()
 config.read(sys.argv[1])
@@ -43,4 +40,3 @@ with zipfile.ZipFile(zip_archive, 'w', zipfile.ZIP_DEFLATED) as zipf:
         if os.path.isfile(file):
             zipf.write(file, os.path.join('PnFMods', file))
     zipf.write('PnFModsLoader.py', 'PnFModsLoader.py')
-
