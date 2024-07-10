@@ -1,4 +1,5 @@
 [Game]
-folder=D:\Games\World_of_Warships
+folder=C:\Games\World_of_Warships
 [Destination]
-folder=D:\owncloud\wows\mxport
+folder=dist
+suffix=mk

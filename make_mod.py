@@ -15,7 +15,6 @@ print(path_to_game)
 xml_root = ET.parse(os.path.join(path_to_game, 'game_info.xml'))
 xml_version = xml_root.findall(".//version[@name='client']")
 version = xml_version[0].attrib['installed']
-version = '.'.join(version.split('.')[0:4])
 print(version)
 
 base_dir = os.path.abspath(os.path.dirname(__file__))
@@ -29,7 +28,8 @@ for f in files:
 
 # Archive name
 target_dir = config['Destination']['folder']
-target_file = 'mxport-' + version + '.zip'
+suffix = config['Destination']['suffix']
+target_file = 'mxport-' + version + '-' + suffix + '.zip'
 zip_archive = os.path.join(target_dir, target_file)
 print(zip_archive)
 
@@ -38,5 +38,4 @@ files = glob.glob(os.path.join('mxPort', '**'), recursive=True)
 with zipfile.ZipFile(zip_archive, 'w', zipfile.ZIP_DEFLATED) as zipf:
     for file in files:
         if os.path.isfile(file):
-            zipf.write(file, os.path.join('PnFMods', file))
-    zipf.write('PnFModsLoader.py', 'PnFModsLoader.py')
+            zipf.write(file, os.path.join(*(file.split(os.path.sep)[1:])))
