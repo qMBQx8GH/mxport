@@ -162,13 +162,12 @@
 			(controller $Instance renderer='GuidingTipHub'
 				(bind enabled "isEventBanner && armoryTipId != SC.Context_guiding_tip.TIP_TYPE.NONE")
 				(args
-					_tipId = "armoryTipId"
-					_tipPositioning = "TIP_POSITION_RIGHT"
-					_offset = 5
-					_hasFinishButton = "isStorageEmpty"
-					_hasNextButton = "lootboxesInStorage >= 1"
-					_noPointer = true
-					_modalWindowName = 'Dock'
+					_tipId =			"armoryTipId"
+					_tipPositioning =	"TIP_POSITION_RIGHT"
+					_hasFinishButton =	"isStorageEmpty"
+					_hasNextButton =	"lootboxesInStorage >= 1"
+					_noPointer =		true
+					_modalWindowName =	'Dock'
 				)
 			)
 		)
@@ -227,15 +226,13 @@
 				(controller $Instance renderer='GuidingTipHub'
 					(bind enabled "dailyTipId != SC.Context_guiding_tip.TIP_TYPE.NONE")
 					(args
-						_tipId = "dailyTipId"
-						_tipPositioning = "TIP_POSITION_LEFT"
-						_offset = "M"
-						_pointerOffset = 90
-						_oppositeDirectionOffset = "-S"
-						_noPointer = true
-						_hasNextButton = "lootboxesInStorage >= 1 || isEventBanner"
-						_hasFinishButton = "lootboxesInStorage == 0 && !isEventBanner"
-						_modalWindowName = 'Dock'
+						_tipId =			"dailyTipId"
+						_tipPositioning =	"TIP_POSITION_LEFT"
+						_offsetX =			"M"
+						_noPointer =		true
+						_hasNextButton =	"lootboxesInStorage >= 1 || isEventBanner"
+						_hasFinishButton =	"lootboxesInStorage == 0 && !isEventBanner"
+						_modalWindowName =	'Dock'
 					)
 				)
 			)
@@ -310,17 +307,16 @@
 					(controller $Instance renderer='GuidingTipHub'
 						(bind enabled "openTipId != SC.Context_guiding_tip.TIP_TYPE.NONE")
 						(args
-							_tipId = "openTipId"
-							_tipPositioning = "TIP_POSITION_LEFT"
-							_offset = 5
-							_pointerOffset = 90
-							_modalWindowName = 'Dock'
+							_tipId =			"openTipId"
+							_tipPositioning =	"TIP_POSITION_LEFT"
+							_pointerOffset =	96px
+							_modalWindowName =	'Dock'
 						)
 					)
 				)
 				(block
 					(macro LOOTBOX_BUTTONS_ANIMATION "lootboxesInStorage > 1")
-					(style (marginBottom = "S") (bind hitTest "isOpenALLBtnEnabled"))
+					(style (marginBottom = "SXS") (bind hitTest "isOpenALLBtnEnabled"))
 					(element DefaultButton
 						_width = 224px
 						_name = 'openAllLootBoxes'
