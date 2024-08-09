@@ -17,6 +17,7 @@ version = xml_version[0].attrib['installed']
 # C:\Games\World_of_Warships_RU>wowsunpack.exe -x bin/8601080/idx -p ..\..\..\res_packages -o res -I gui/unbound2/pc/lootboxes/*.*
 content = [
     'gui/unbound2/pc/lootboxes/lootbox_elements.unbound',
+    'gui/unbound2/pc/lootboxes/battlepass_main.unbound',
 ]
 for d in content:
     subprocess.run([
