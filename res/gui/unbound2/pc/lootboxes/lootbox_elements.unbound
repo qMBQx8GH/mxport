@@ -420,7 +420,7 @@
 	)
 	(block
 		(class $Fullsize)
-		(style (bind backgroundImage "'url:../service_kit/lootbox_banners/' + bgImage + '.png'"))
+		(style (bind backgroundImage "'url:../lootbox_banners/' + bgImage + '.png'"))
 	)
 	(tf
 		(class $TextDefaultBold21NM)
