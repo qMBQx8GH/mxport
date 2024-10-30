@@ -19,6 +19,7 @@ content = [
     'gui/unbound2/pc/lootboxes/lootbox_elements.unbound',
     'gui/unbound2/pc/lootboxes/battlepass_main.unbound',
 ]
+print(version)
 for d in content:
     subprocess.run([
         'wowsunpack.exe',
