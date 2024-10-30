@@ -13,17 +13,24 @@
 	(scope
 		(macro STAGE_SIZE)
 		(event openLootboxClicked)
+		(event evDelayedUpdate)
 
 		(macro HIGH_CONTRAST_DATA_SCOPE)
 		(macro SERVER_TIME_SCOPE)
 		(macro FEATURES "29")
 
+		(struct windowQueue = PULL_WINDOW_QUEUE())
+
 		(var isLootboxesUnlocked:bool = "feature_29 != 'locked'")
 
-		(var currentBargeBannerEntity:dhEntity = "getSingleEntityAutoUpdate(CC.currentBargeBanner)")
+		
+		(var dailyLootboxesEntity:dhEntity = "getPrimaryEntity(CC.splitRunTest, 'Return_daily_lootboxes')")
+		(var isDailyLootboxesAvailable:bool = "dailyLootboxesEntity.splitRunTest.data.isDailyLootboxesAvailable" (event "dailyLootboxesEntity.splitRunTest.evDataChanged"))
+
+		(var currentBargeBannerEntity:dhEntity = "getSingleEntity(CC.currentBargeBanner)")
 		(var currentName:str = "currentBargeBannerEntity.currentBargeBanner.name ?: ''" (event "currentBargeBannerEntity.currentBargeBanner.evChanged"))
 
-		(var bargeBannerEntity:dhEntity = "getPrimaryEntityAutoUpdate(CC.bargeBanner, currentName)")
+		(var bargeBannerEntity:dhEntity = "getPrimaryEntity(CC.bargeBanner, currentName)")
 		(var startTime:number = "bargeBannerEntity.bargeBanner.startTime ?: 0")
 		(var finishTime:number = "bargeBannerEntity.bargeBanner.finishTime ?: 0")
 		(var eventLootboxBannerTillStart:number = "startTime - serverTime")
@@ -39,11 +46,8 @@
 		(var lastOpenRewardsEntityId:number = "lootboxStateEntity.lootboxOpeningState.lastOpenRewards" (event "lootboxStateEntity.lootboxOpeningState.evLootboxesOpenEnded"))
 
 		(var lootboxEntity:gfx = "$datahub.getSingleEntity(CC.lootboxConfigComponent)")
-		(var lootboxExp:number = "lootboxEntity.lootboxStorageComponent.lootExp ?: 0" (event "lootboxEntity.lootboxStorageComponent.evUpdate"))
 		(var dailyLootboxesCount:number = "lootboxEntity.lootboxStorageComponent.boughtToday ?: 0" (event "lootboxEntity.lootboxStorageComponent.evUpdate"))
 		(var lootboxesInStorage:number = "lootboxEntity.lootboxStorageComponent.inStorage ?: 0" (event "lootboxEntity.lootboxStorageComponent.evUpdate"))
-		(var dropTimeStamp:number = "lootboxEntity.lootboxStorageComponent.dropAt ?: 0" (event "lootboxEntity.lootboxStorageComponent.evUpdate"))
-		(var lootboxPrices:array = "lootboxEntity.lootboxConfigComponent.prices ?: []" (event "lootboxEntity.lootboxConfigComponent.evUpdate"))
 		(var isAnimationActive:bool = "lootboxEntity.lootboxAnimationState.active" (event "lootboxEntity.lootboxAnimationState.evUpdate"))
 		(var isAnimationOpen:bool = "lootboxEntity.lootboxAnimationState.open" (event "lootboxEntity.lootboxAnimationState.evUpdate"))
 		(var openedLootboxRewardsEntityId:number = "lootboxEntity.lootboxComponent.rewards" (event "lootboxEntity.lootboxComponent.evUpdate"))
@@ -60,20 +64,11 @@
 										isMatryoshkaLootbox							? 30%
 																					: 35%")
 
-		(var lootboxPricesListCount:number = "lootboxPrices.length")
-		(var allDailyLootboxesRecieved:bool = "lootboxPricesListCount == dailyLootboxesCount")
-		(var curLootboxPrice:number = "allDailyLootboxesRecieved ? lootboxPrices[0] : lootboxPrices[dailyLootboxesCount]")
-		(var finalPrice:number = "curLootboxPrice - lootboxExp")
-
-		(struct lootboxDailyNewTip = PULL_GUIDING_TIP(_type = "SC.Context_guiding_tip.TIP_TYPE.LOOTBOXES_DAILY"))
-		(struct lootboxDailyRepeatNewTip = PULL_GUIDING_TIP(_type = "SC.Context_guiding_tip.TIP_TYPE.LOOTBOXES_DAILY_REPEAT"))
 		(struct lootboxArmoryNewTip = PULL_GUIDING_TIP(_type = "SC.Context_guiding_tip.TIP_TYPE.LOOTBOXES_ARMORY"))
 		(struct lootboxArmoryRepeatNewTip = PULL_GUIDING_TIP(_type = "SC.Context_guiding_tip.TIP_TYPE.LOOTBOXES_ARMORY_REPEAT"))
 		(struct lootboxOpenNewTip = PULL_GUIDING_TIP(_type = "SC.Context_guiding_tip.TIP_TYPE.LOOTBOXES_OPEN"))
 		(struct lootboxOpenRepeatNewTip = PULL_GUIDING_TIP(_type = "SC.Context_guiding_tip.TIP_TYPE.LOOTBOXES_OPEN_REPEAT"))
-		(var dailyTipId:number = "	lootboxDailyNewTip.isActive			? SC.Context_guiding_tip.TIP_TYPE.LOOTBOXES_DAILY :
-									lootboxDailyRepeatNewTip.isActive	? SC.Context_guiding_tip.TIP_TYPE.LOOTBOXES_DAILY_REPEAT
-																		: SC.Context_guiding_tip.TIP_TYPE.NONE")
+
 		(var armoryTipId:number = "	lootboxArmoryNewTip.isActive		? SC.Context_guiding_tip.TIP_TYPE.LOOTBOXES_ARMORY :
 									lootboxArmoryRepeatNewTip.isActive	? SC.Context_guiding_tip.TIP_TYPE.LOOTBOXES_ARMORY_REPEAT
 																		: SC.Context_guiding_tip.TIP_TYPE.NONE")
@@ -93,15 +88,23 @@
 																header: 'IDS_RECEIVED_LOOTBOXES_REWARDS',
 																subheader: subst('IDS_OPENED_LOOTBOXES', [], {count: lootboxOpenedCount}, lootboxOpenedCount)}
 															: {}")
-		(macro COUNTDOWN_SCOPE "'countdownText'" "dropTimeStamp" "'HH:mm:ss'")
+
+		(var visibleLootboxesCount:number = "lootboxesInStorage" watch=false)
+		(bind visibleLootboxesCount "lootboxesInStorage" watch=false init=false (event "evDelayedUpdate"))
 	)
+	(macro HIDE_UI_ON_SHIPOVERVIEW)
+
+	(dispatch evDelayedUpdate delay="lootboxesInStorage > 0 ? 0 : 0.22" (bind trigger "lootboxesInStorage"))
 	(bindcall externalCall 'inputMapping.onRequest' "[requestName, requestParams]" init=false watch=false (event "lootboxStateEntity.lootboxOpeningState.evLootboxesOpenEnded"))
 	(dispatch hideRewards args="{}" dir="EventDirection.DOWN" (event "openLootboxClicked") (bind enabled "isAnimationOpen"))
+	
 	(style (bind width "stageWidth") (bind height "stageHeight"))
+
 	(block
 		(style (marginLeft = "{1280:MS, 1920:XL}") (marginTop = "{720:M, 1080:L}") (bind hitTest "!isAnimationActive"))
 
 		(block
+			(bind visible "windowQueue.queue[windowQueue.queue.length - 1] != 'ModalWindowShipPresentation'")
 			(class $FullsizeAbsolute)
 			(controller $Instance renderer='BlurMapCustom'
 				(bind enabled "!isHighContrast")
@@ -124,30 +127,19 @@
 	
 	(block
 		(style (position = "absolute") (top = 17%) (left = "{1280:MS, 1920:XL}") (width ="LOOTBOX_BANNER_WIDTH"))
+
 		(block
+			(bind visible "windowQueue.queue[windowQueue.queue.length - 1] != 'ModalWindowShipPresentation'")
 			(class $FullsizeAbsolute)
 			(controller $Instance renderer='BlurMapCustom'
 				(bind enabled "!isHighContrast")
 				(args _map = 'mc_blurmap5_feather')
 			)
 		)
-		(tf
-			(class $TextDefaultBold21NM)
-			(style (alpha = "TA") (marginBottom = "M") (marginTop = "MS"))
-			(bind text "toUpper(tr('IDS_DAILY_LOOTBOXES'))")
-		)
 		(block
-			(style (vgap = "M") (width = 100%) (bind marginBottom "isReferralBanner || isEventBanner ? LS : 0"))
-			(controller $Repeat renderer='RepeatParagraphItemNM'
-				(bind count "2")
-				(args
-					_paragraphText = "'IDS_DAILY_LOOTBOXES_HINT_' + $index"
-					_width = "100%"
-					_alpha = "TC"
-					_leading = -2
-					_size = "SC.Ui_styles.SIZE.LARGE"
-				)
-			)
+			(bind visible "isDailyLootboxesAvailable")
+			(style (width = 100%) (bind marginBottom "isReferralBanner || isEventBanner ? LS : 0"))
+			(controller $Instance renderer='DailyLootboxesInfo' (bind enabled "isDailyLootboxesAvailable"))
 		)
 		(block
 			(controller $Instance renderer='ReferralSystemBanner'
@@ -155,12 +147,12 @@
 			)
 		)
 		(block
-			(style (bind marginTop "isReferralBanner ? M : 0"))
+			(style (bind marginTop "isReferralBanner ? M : MS"))
 			(controller $Instance renderer='EventLootboxBanner'
 				(bind enabled "isEventBanner")
 			)
 			(controller $Instance renderer='GuidingTipHub'
-				(bind enabled "isEventBanner && armoryTipId != SC.Context_guiding_tip.TIP_TYPE.NONE")
+				(bind enabled "armoryTipId != SC.Context_guiding_tip.TIP_TYPE.NONE")
 				(args
 					_tipId =			"armoryTipId"
 					_tipPositioning =	"TIP_POSITION_RIGHT"
@@ -176,6 +168,7 @@
 	(block
 		(style (position = "absolute") (top = 17%) (right = "{1280:MS, 1920:XL}"))
 		(block
+			(bind visible "windowQueue.queue[windowQueue.queue.length - 1] != 'ModalWindowShipPresentation'")
 			(style (position = "absolute") (left = -30px) (width = 380px) (height = 100%))
 			(element BlurBackgroundCommon
 				_map = 'mc_blurmap5_feather'
@@ -184,172 +177,93 @@
 		)
 		(block
 			(style (width = 320px) (paddingTop = "MS") (paddingBottom = "L") (align = "center"))
-			
-			(hblock
-				(style (marginBottom = "XXS") (backgroundColor = "NO_COLOR"))
-				(tf
-					(class $TextDefaultBold50NM)
-					(style (marginRight = "XS"))
-					(bind text "formatSeparator(lootboxExp)")
-				)
-				(block
-					(style (width = 44px) (height = 44px) (backgroundImage = 'url:../service_kit/currencies/icon_exp_large.png'))
-				)
-				(controller $Tooltip
-					(renderer = 'SimpleStatusTooltip')
+			(block
+				(style (width = 100%))
+				(controller $Instance renderer='DailyLootboxes'
+					(bind enabled "isDailyLootboxesAvailable")
 					(args
-						_text = 'IDS_LOOTBOX_EXP_HINT'
+						_isEventBanner="isEventBanner"
 					)
-					(macro DEFAULT_TOOLTIP_BEHAVIOUR)
 				)
-			)
-			(tf
-				(class $TextDefault19NM)
-				(style (marginBottom = "MS") (alpha = "TA"))
-				(text = 'IDS_AVAILABLE_EXP_FOR_LOOTBOXES')
 			)
 			(block
-				(style (width = 100%) (marginBottom = 68px))
-				(element HorizontalDividerTwoPx)
-				(block
-					(style (position = "absolute") (width = 100%))
-					(element HorizontalDividerTwoPx)
+				(macro LOOTBOX_BUTTONS_ANIMATION "!isStorageEmpty")
+				(tf
+					(class $TextDefaultBold23NM)
+					(style (alpha = "TA"))
+					(bind text "subst('IDS_OWNED_LOOTBOXES', [], {lootboxesCount: visibleLootboxesCount}, visibleLootboxesCount)")
 				)
 			)
-
-			
-			(hblock
-				(style (marginBottom = "LS"))
-				(controller $Repeat renderer='LootboxProgressBarWithLootbox'
-					(bind count "lootboxPricesListCount")
+			(block
+				(macro LOOTBOX_BUTTONS_ANIMATION "isStorageEmpty")
+				(style (bind paddingTop "isDailyLootboxesAvailable ? 0 : S"))
+				(tf
+					(class $TextDefaultBold19NM)
+					(style (textColor = "SC.Ui_styles.SERVICE_COLORS.ORANGE"))
+					(bind text "toUpper(tr('IDS_YOU_HAVE_NO_LOOTBOXES'))")
+				)
+			)
+			(block
+				(macro LOOTBOX_BUTTONS_ANIMATION "!isStorageEmpty")
+				(style (marginTop = "MS") (marginBottom = "SXS"))
+				(element DefaultButton
+					_width = 224px
+					_label = 'IDS_OPEN_LOOTBOX'
+					_name = 'openLootBox'
+					_enabled = "isOpenBtnEnabled"
+					_isTransactionBtn = true
+					_defaultFocused = true
+					_focusIndex = 1
+					_dispatchedEv = 'openLootboxClicked'
+					_methods = "[	{	type: 'inputMapping.onAction', name: 'LootboxProxy.openLootbox', args: { }},
+									{	type: 'inputMapping.onAction',
+										name: openTipId == SC.Context_guiding_tip.TIP_TYPE.LOOTBOXES_OPEN_REPEAT ? 'deactivateTipChain': '',
+										args: { tip_chain_id: SC.Context_guiding_tip.TIP_CHAIN_ID.LOOTBOXES_REPEAT }}]"
 				)
 				(controller $Instance renderer='GuidingTipHub'
-					(bind enabled "dailyTipId != SC.Context_guiding_tip.TIP_TYPE.NONE")
+					(bind enabled "openTipId != SC.Context_guiding_tip.TIP_TYPE.NONE")
 					(args
-						_tipId =			"dailyTipId"
+						_tipId =			"openTipId"
 						_tipPositioning =	"TIP_POSITION_LEFT"
-						_offsetX =			"M"
-						_noPointer =		true
-						_hasNextButton =	"lootboxesInStorage >= 1 || isEventBanner"
-						_hasFinishButton =	"lootboxesInStorage == 0 && !isEventBanner"
+						_pointerOffset =	"XLL"
 						_modalWindowName =	'Dock'
 					)
 				)
 			)
-			(hblock
-				(bind visible "!allDailyLootboxesRecieved")
-				(tf
-					(class $TextDefaultNM)
-					(style (marginRight = "S") (alpha = "TA"))
-					(text = 'IDS_EXP_TO_NEXT_LOOTBOX')
+			(block
+				(macro LOOTBOX_BUTTONS_ANIMATION "lootboxesInStorage > 1")
+				(style (marginBottom = "SXS") (bind hitTest "isOpenALLBtnEnabled"))
+				(element DefaultButton
+					_width = 224px
+					_name = 'openAllLootBoxes'
+					_label = "openLootboxesBtnLabel"
+					_isTransactionBtn = true
+					_focusIndex = 2
+					_enabled = "isOpenALLBtnEnabled"
+					_methods = "[	{	type: 'inputMapping.onRequest', name: 'showOpenAllLootboxesConfirmation', args: {}},
+									{	type: 'inputMapping.onAction',
+										name: openTipId == SC.Context_guiding_tip.TIP_TYPE.LOOTBOXES_OPEN_REPEAT ? 'deactivateTipChain': '',
+										args: { tip_chain_id: SC.Context_guiding_tip.TIP_CHAIN_ID.LOOTBOXES_REPEAT }}]"
 				)
-				(element PriceTag _priceInfo = "{ currency: SC.Common.CURRENCIES.XP, finalPrice: finalPrice }")
 			)
 			(block
-				(bind visible "allDailyLootboxesRecieved")
-				(style (align = "center"))
-				(tf
-					(class $TextDefaultNM)
-					(style (marginBottom = "SXS") (textColor = "ORANGE_FONT_COLOR"))
-					(text = 'IDS_LOOTBOX_PURCHASE_WILL_BE_AVAILABLE_AFTER')
-				)
-				(tf
-					(class $TextDefaultBoldNM)
-					(style (textColor = "ORANGE_FONT_COLOR"))
-					(bind text "countdownText")
-				)
-			)
-
-			(block
-				(style (width = 100%) (marginTop = "MS") (marginBottom = "L"))
-				(element HorizontalDividerTwoPx)
-				(block
-					(style (position = "absolute") (width = 100%))
-					(element HorizontalDividerTwoPx)
-				)
-			)
-			
-			(block
-				(style (width = 100%) (align = "center"))
-				(block
-					(macro LOOTBOX_BUTTONS_ANIMATION "!isStorageEmpty")
-					(tf
-						(class $TextDefaultBold23NM)
-						(style (alpha = "TA"))
-						(bind text "subst('IDS_OWNED_LOOTBOXES', [], {lootboxesCount: lootboxesInStorage}, lootboxesInStorage)")
-					)
-				)
-				(block
-					(macro LOOTBOX_BUTTONS_ANIMATION "isStorageEmpty")
-					(tf
-						(class $TextDefaultBold19NM)
-						(style (textColor = "ORANGE_FONT_COLOR"))
-						(bind text "toUpper(tr('IDS_YOU_HAVE_NO_LOOTBOXES'))")
-					)
-				)
-				(block
-					(macro LOOTBOX_BUTTONS_ANIMATION "!isStorageEmpty")
-					(style (marginTop = "MS") (marginBottom = "SXS"))
-					(element DefaultButton
-						_width = 224px
-						_label = 'IDS_OPEN_LOOTBOX'
-						_name = 'openLootBox'
-						_enabled = "isOpenBtnEnabled"
-						_isTransactionBtn = true
-						_defaultFocused = true
-						_focusIndex = 1
-						_dispatchedEv = 'openLootboxClicked'
-						_methods = "[	{	type: 'inputMapping.onAction', name: 'LootboxProxy.openLootbox', args: { }},
-										{	type: 'inputMapping.onAction',
-											name: openTipId == SC.Context_guiding_tip.TIP_TYPE.LOOTBOXES_OPEN_REPEAT ? 'deactivateTipChain': '',
-											args: { tip_chain_id: SC.Context_guiding_tip.TIP_CHAIN_ID.LOOTBOXES_REPEAT }}]"
-					)
-					(controller $Instance renderer='GuidingTipHub'
-						(bind enabled "openTipId != SC.Context_guiding_tip.TIP_TYPE.NONE")
-						(args
-							_tipId =			"openTipId"
-							_tipPositioning =	"TIP_POSITION_LEFT"
-							_pointerOffset =	96px
-							_modalWindowName =	'Dock'
-						)
-					)
-				)
-				(block
-					(macro LOOTBOX_BUTTONS_ANIMATION "lootboxesInStorage > 1")
-					(style (marginBottom = "SXS") (bind hitTest "isOpenALLBtnEnabled"))
-					(element DefaultButton
-						_width = 224px
-						_name = 'openAllLootBoxes'
-						_label = "openLootboxesBtnLabel"
-						_isTransactionBtn = true
-						_focusIndex = 2
-						_enabled = "isOpenALLBtnEnabled"
-						_methods = "[	{	type: 'inputMapping.onRequest', name: 'showOpenAllLootboxesConfirmation', args: {}},
-										{	type: 'inputMapping.onAction',
-											name: openTipId == SC.Context_guiding_tip.TIP_TYPE.LOOTBOXES_OPEN_REPEAT ? 'deactivateTipChain': '',
-											args: { tip_chain_id: SC.Context_guiding_tip.TIP_CHAIN_ID.LOOTBOXES_REPEAT }}]"
-					)
-				)
-				(block
-					(macro LOOTBOX_BUTTONS_ANIMATION "!isStorageEmpty")
-					(element DefaultButton
-						_width = 224px
-						_name = 'openLootBoxTypeManagementPanel'
-						_label = "toUpper(tr('IDS_OPEN_LOOTBOX_TYPES'))"
-						_type = "SC.Ui_styles.BUTTON_TYPE.SECONDARY"
-						_enabled = "isOpenBtnEnabled"
-						_isTransactionBtn = true
-						_focusIndex = 3
-						_methods = "[{type: 'inputMapping.onRequest', name: 'showLootboxTypes', args: {}}]"
-					)
+				(macro LOOTBOX_BUTTONS_ANIMATION "!isStorageEmpty")
+				(element DefaultButton
+					_width = 224px
+					_name = 'openLootBoxTypeManagementPanel'
+					_label = 'IDS_OPEN_LOOTBOX_TYPES'
+					_type = "SC.Ui_styles.BUTTON_TYPE.SECONDARY"
+					_enabled = "isOpenBtnEnabled"
+					_isTransactionBtn = true
+					_focusIndex = 3
+					_methods = "[{type: 'inputMapping.onRequest', name: 'showLootboxTypes', args: {}}]"
 				)
 			)
 		)
 	)
 	
 	(hblock
-		(class $MiddleAlignedAbsolutely)
-		(class $MiddleVAligned)
+		(class $MiddleVHAbsolutely)
 		(style (bind top "rewardsPosition"))
 		(controller $Repeat renderer='LootboxRewardItemAdapter'
 			(bind enabled "isAnimationOpen")
@@ -449,6 +363,137 @@
 	)
 )
 
+(def element DailyLootboxesInfo ()
+	(style (width = 100%))
+	(tf
+		(class $TextDefaultBold21NM)
+		(style (alpha = "TA") (marginBottom = "M") (marginTop = "MS"))
+		(bind text "toUpper(tr('IDS_DAILY_LOOTBOXES'))")
+	)
+	(block
+		(style (width = 100%) (vgap = "M"))
+		(controller $Repeat renderer='RepeatParagraphItemNM'
+			(bind count "2")
+			(args
+				_paragraphText = "'IDS_DAILY_LOOTBOXES_HINT_' + $index"
+				_width = "100%"
+				_alpha = "TC"
+				_leading = -2
+				_size = "SC.Ui_styles.SIZE.LARGE"
+			)
+		)
+	)
+)
+
+(def element DailyLootboxes (_isEventBanner:bool = false)
+	(scope
+		(var lootboxEntity:dhEntity = "getSingleEntity(CC.lootboxConfigComponent)")
+		(var dropTimeStamp:number = "lootboxEntity.lootboxStorageComponent.dropAt ?: 0" (event "lootboxEntity.lootboxStorageComponent.evUpdate"))
+		(var dailyLootboxesCount:number = "lootboxEntity.lootboxStorageComponent.boughtToday ?: 0" (event "lootboxEntity.lootboxStorageComponent.evUpdate"))
+		(var lootboxExp:number = "lootboxEntity.lootboxStorageComponent.lootExp ?: 0" (event "lootboxEntity.lootboxStorageComponent.evUpdate"))
+		(var lootboxPrices:array = "lootboxEntity.lootboxConfigComponent.prices ?: []" (event "lootboxEntity.lootboxConfigComponent.evUpdate"))
+		(var lootboxesInStorage:number = "lootboxEntity.lootboxStorageComponent.inStorage ?: 0" (event "lootboxEntity.lootboxStorageComponent.evUpdate"))
+		(var lootboxPricesListCount:number = "lootboxPrices.length")
+		(var allDailyLootboxesRecieved:bool = "lootboxPricesListCount == dailyLootboxesCount")
+		(var curLootboxPrice:number = "allDailyLootboxesRecieved ? lootboxPrices[0] : lootboxPrices[dailyLootboxesCount]")
+		(var finalPrice:number = "curLootboxPrice - lootboxExp")
+
+		(macro SERVER_TIME_SCOPE)
+		(macro COUNTDOWN_SCOPE "'countdownText'" "dropTimeStamp" "'HH:mm:ss'")
+
+		(struct lootboxDailyNewTip = PULL_GUIDING_TIP(_type = "SC.Context_guiding_tip.TIP_TYPE.LOOTBOXES_DAILY"))
+		(struct lootboxDailyRepeatNewTip = PULL_GUIDING_TIP(_type = "SC.Context_guiding_tip.TIP_TYPE.LOOTBOXES_DAILY_REPEAT"))
+		(var dailyTipId:number = "	lootboxDailyNewTip.isActive			? SC.Context_guiding_tip.TIP_TYPE.LOOTBOXES_DAILY :
+									lootboxDailyRepeatNewTip.isActive	? SC.Context_guiding_tip.TIP_TYPE.LOOTBOXES_DAILY_REPEAT
+																		: SC.Context_guiding_tip.TIP_TYPE.NONE")
+	)
+	(style (width = 100%) (align = "center"))
+	
+	(hblock
+		(style (marginBottom = "XXS") (backgroundColor = "NO_COLOR"))
+		(tf
+			(class $TextDefaultBold50NM)
+			(style (marginRight = "XS"))
+			(bind text "formatSeparator(lootboxExp)")
+		)
+		(block
+			(style (width = 44px) (height = 44px) (backgroundImage = 'url:../service_kit/currencies/icon_exp_large.png'))
+		)
+		(controller $Tooltip
+			(renderer = 'SimpleStatusTooltip')
+			(args
+				_text = 'IDS_LOOTBOX_EXP_HINT'
+			)
+			(macro DEFAULT_TOOLTIP_BEHAVIOUR)
+		)
+	)
+	(tf
+		(class $TextDefault19NM)
+		(style (marginBottom = "MS") (alpha = "TA"))
+		(text = 'IDS_AVAILABLE_EXP_FOR_LOOTBOXES')
+	)
+	(block
+		(style (width = 100%) (marginBottom = 68px))
+		(element HorizontalDividerTwoPx)
+		(block
+			(style (position = "absolute") (width = 100%))
+			(element HorizontalDividerTwoPx)
+		)
+	)
+
+	
+	(hblock
+		(style (marginBottom = "LS"))
+		(controller $Repeat renderer='LootboxProgressBarWithLootbox'
+			(bind count "lootboxPricesListCount")
+		)
+		(controller $Instance renderer='GuidingTipHub'
+			(bind enabled "dailyTipId != SC.Context_guiding_tip.TIP_TYPE.NONE")
+			(args
+				_tipId =			"dailyTipId"
+				_tipPositioning =	"TIP_POSITION_LEFT"
+				_offsetX =			"M"
+				_noPointer =		true
+				_hasNextButton =	"lootboxesInStorage >= 1 || _isEventBanner"
+				_hasFinishButton =	"lootboxesInStorage == 0 && !_isEventBanner"
+				_modalWindowName =	'Dock'
+			)
+		)
+	)
+	(hblock
+		(bind visible "!allDailyLootboxesRecieved")
+		(tf
+			(class $TextDefaultNM)
+			(style (marginRight = "S") (alpha = "TA"))
+			(text = 'IDS_EXP_TO_NEXT_LOOTBOX')
+		)
+		(element PriceTag _priceInfo = "{ currency: SC.Common.CURRENCIES.XP, finalPrice: finalPrice }")
+	)
+	(block
+		(bind visible "allDailyLootboxesRecieved")
+		(style (align = "center"))
+		(tf
+			(class $TextDefaultNM)
+			(style (marginBottom = "SXS") (textColor = "ORANGE_FONT_COLOR"))
+			(text = 'IDS_LOOTBOX_PURCHASE_WILL_BE_AVAILABLE_AFTER')
+		)
+		(tf
+			(class $TextDefaultBoldNM)
+			(style (textColor = "ORANGE_FONT_COLOR"))
+			(bind text "countdownText")
+		)
+	)
+
+	(block
+		(style (width = 100%) (marginTop = "MS") (marginBottom = "L"))
+		(element HorizontalDividerTwoPx)
+		(block
+			(style (position = "absolute") (width = 100%))
+			(element HorizontalDividerTwoPx)
+		)
+	)
+)
+
 (def element LootboxProgressBarWithLootbox ()
 	(scope
 		(var lootboxEntity:gfx = "$datahub.getSingleEntity(CC.lootboxConfigComponent)")
@@ -499,7 +544,6 @@
 		(element PriceTag _priceInfo="{ finalPrice: lootboxPrices[$index], currency: SC.Common.CURRENCIES.XP }")
 	)
 )
-
 
 (def element LootboxDailyTooltip (_isReceived:bool = false, _progress:number = 0, _expToLootbox:number = 0)
 	(style (width = 320px) (hitTest = false))
@@ -591,7 +635,8 @@
 	(style (visualOffsetY = "_trigger ? 0px : 5px"))
 
 	(controller $Animation
-		(bindcall play	duration = 0.12
+		(bindcall play	delay = 0.2
+						duration = 0.12
 						from = { alpha: 0, visualOffsetY: 5px, visible: false }
 						to = { alpha: 1, visualOffsetY: 0px, visible: true }
 						action = "kill"
