@@ -55,6 +55,11 @@
 		(var openedLootboxRewards:array = "openedLootboxRewardsEntity.rewardsStack.rewards ?: []" (event "openedLootboxRewardsEntity.rewardsStack.evChanged"))
 		(var boxType:number = "lootboxEntity.lootboxComponent.boxType ?: 0" (event "lootboxEntity.lootboxComponent.evUpdate"))
 
+		(var isNotShipPresentation:bool = "windowQueue.queue[windowQueue.queue.length - 1] != 'ModalWindowShipPresentation'")
+		(var isBannerBlurVisible:bool = "	!isHighContrast &&
+											(isDailyLootboxesAvailable || isReferralBanner || isEventBanner) &&
+											isNotShipPresentation")
+
 		
 		(var isMatryoshkaLootbox:bool = "isIn(boxType, [4082291632, 4083340208, 4084388784])") 
 		(var rewardEntity:gfx = "$datahub.getEntity(openedLootboxRewards[0])")
@@ -107,7 +112,7 @@
 			(bind visible "windowQueue.queue[windowQueue.queue.length - 1] != 'ModalWindowShipPresentation'")
 			(class $FullsizeAbsolute)
 			(controller $Instance renderer='BlurMapCustom'
-				(bind enabled "!isHighContrast")
+				(bind enabled "!isHighContrast && isNotShipPresentation")
 				(args _map = 'mc_blurmap5_feather')
 			)
 		)
@@ -129,17 +134,19 @@
 		(style (position = "absolute") (top = 17%) (left = "{1280:MS, 1920:XL}") (width ="LOOTBOX_BANNER_WIDTH"))
 
 		(block
-			(bind visible "windowQueue.queue[windowQueue.queue.length - 1] != 'ModalWindowShipPresentation'")
+
 			(class $FullsizeAbsolute)
 			(controller $Instance renderer='BlurMapCustom'
-				(bind enabled "!isHighContrast")
+				(bind enabled "isBannerBlurVisible")
 				(args _map = 'mc_blurmap5_feather')
 			)
 		)
 		(block
 			(bind visible "isDailyLootboxesAvailable")
 			(style (width = 100%) (bind marginBottom "isReferralBanner || isEventBanner ? LS : 0"))
-			(controller $Instance renderer='DailyLootboxesInfo' (bind enabled "isDailyLootboxesAvailable"))
+			(controller $Instance renderer='DailyLootboxesInfo'
+				(bind enabled "isDailyLootboxesAvailable")
+			)
 		)
 		(block
 			(controller $Instance renderer='ReferralSystemBanner'
@@ -168,11 +175,13 @@
 	(block
 		(style (position = "absolute") (top = 17%) (right = "{1280:MS, 1920:XL}"))
 		(block
-			(bind visible "windowQueue.queue[windowQueue.queue.length - 1] != 'ModalWindowShipPresentation'")
 			(style (position = "absolute") (left = -30px) (width = 380px) (height = 100%))
-			(element BlurBackgroundCommon
-				_map = 'mc_blurmap5_feather'
-				_isFramed = false
+			(controller $Instance renderer='BlurBackgroundCommon'
+				(bind enabled "isNotShipPresentation")
+				(args
+					_map = 'mc_blurmap5_feather'
+					_isFramed = false
+				)
 			)
 		)
 		(block
