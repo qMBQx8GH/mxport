@@ -131,7 +131,7 @@
 	)
 	
 	(block
-		(style (position = "absolute") (top = 17%) (left = "{1280:MS, 1920:XL}") (width ="LOOTBOX_BANNER_WIDTH"))
+		(style (position = "absolute") (top = 17%) (right = "{1280:MS, 1920:XL}") (width ="LOOTBOX_BANNER_WIDTH"))
 
 		(block
 
@@ -173,7 +173,7 @@
 	)
 	
 	(block
-		(style (position = "absolute") (top = 17%) (right = "{1280:MS, 1920:XL}"))
+		(style (position = "absolute") (top = 17%) (left = "{1280:MS, 1920:XL}"))
 		(block
 			(style (position = "absolute") (left = -30px) (width = 380px) (height = 100%))
 			(controller $Instance renderer='BlurBackgroundCommon'
