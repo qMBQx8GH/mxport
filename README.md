@@ -1,31 +1,35 @@
 # mxPort
 
-A modification of the World of Warships game to change loot boxes screen layout.
+Модификация игры "Мир кораблей" для изменения макета экрана лутбоксов.
 
-All boxes management controls moved to left side of the screen.
-1. For not to be overlayed by notifications
-1. and it feels more natural to me have controls on the left.
+Все элементы управления ящиками перемещены в левую часть экрана.
+
+1. Чтобы не перекрывать уведомления
+1. и мне кажется более естественным иметь элементы управления слева.
 
 ![demo](img/demo.jpg)
 
-# Install
+# Установить
 
-- Download .zip archive from the [Releases page](https://github.com/qMBQx8GH/noflags/releases).
-- Open the folder with the game, find the bin folder in it and go to it.
-- It will contain folders with numerical names - these are versions of the game.
-- As a rule, the actual version is the largest number.
-- Go to it and open the res_mods folder with it.
-- It should look something like D:\Games\World_of_Warships\bin\6775398\res_mods
-- Here in this folder unpack the archive (if you are prompted to replace the files, then agree).
+- Скачайте архив .zip со страницы [форума](https://forum.korabli.su/topic/158869-).
 
-# Build yourself
+- Откройте папку с игрой, найдите в ней папку bin и перейдите в нее.
+- В ней будут папки с числовыми названиями — это версии игры.
+- Как правило, фактическая версия имеет наибольшее число.
+- Перейдите в нее и откройте с ее помощью папку res_mods.
+- Должно получиться что-то вроде D:\Games\Korabli\bin\6775398\res_mods
+- Вот в эту папку распакуйте архив (если будет предложено заменить файлы, то соглашайтесь).
 
-1. Install python 3.X, git
-1. Clone the repository
+# Соберите сами
+
+1. Установите python 3.X, git
+1. Клонируйте репозиторий
 ```git clone https://github.com/qMBQx8GH/mxPort```
-1. Change directory to noflags
+1. Измените каталог на mxPort
 ```cd mxPort```
-1. Copy and edit build.ini.dist
+1. Переключитесь на ветку mk
+```git checkout mk```
+1. Скопируйте и отредактируйте build.ini.dist
 ```cp build.ini.dist build.ini```
-1. Create an archive to unpack into bin\NNNNNNNN\res_mods folder in the game.
+1. Создайте архив для распаковки в папку bin\NNNNNNNN\res_mods в игре.
 ```python make_mod.py build.ini```
