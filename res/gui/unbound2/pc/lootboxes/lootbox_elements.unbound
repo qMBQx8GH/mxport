@@ -111,9 +111,11 @@
 		(block
 			(bind visible "windowQueue.queue[windowQueue.queue.length - 1] != 'ModalWindowShipPresentation'")
 			(class $FullsizeAbsolute)
-			(controller $Instance renderer='BlurMapCustom'
+			(controller $Instance renderer='BlurMap'
 				(bind enabled "!isHighContrast && isNotShipPresentation")
-				(args _map = 'mc_blurmap5_feather')
+				(args
+					_blurType = "BLUR_TYPE.LOW_SPHERE"
+				)
 			)
 		)
 		(block
@@ -136,9 +138,11 @@
 		(block
 
 			(class $FullsizeAbsolute)
-			(controller $Instance renderer='BlurMapCustom'
+			(controller $Instance renderer='BlurMap'
 				(bind enabled "isBannerBlurVisible")
-				(args _map = 'mc_blurmap5_feather')
+				(args
+					_blurType = "BLUR_TYPE.LOW_SPHERE"
+				)
 			)
 		)
 		(block
@@ -176,11 +180,10 @@
 		(style (position = "absolute") (top = 17%) (right = "{1280:MS, 1920:XL}"))
 		(block
 			(style (position = "absolute") (left = -30px) (width = 380px) (height = 100%))
-			(controller $Instance renderer='BlurBackgroundCommon'
+			(controller $Instance renderer='BlurMapWithLayerContrastPanel'
 				(bind enabled "isNotShipPresentation")
 				(args
-					_map = 'mc_blurmap5_feather'
-					_isFramed = false
+					_blurType = "BLUR_TYPE.LOW_SPHERE"
 				)
 			)
 		)
@@ -613,9 +616,11 @@
 	(style (marginRight = "S") (marginLeft = "S") (alpha = 0) (visualOffsetY = 35px))
 	(block
 		(class $FullsizeAbsolute)
-		(controller $Instance renderer='BlurMapCustom'
+		(controller $Instance renderer='BlurMap'
 			(bind enabled "!isHighContrast")
-			(args _map = 'mc_blurmap5_feather')
+			(args
+				_blurType = "BLUR_TYPE.LOW_SPHERE"
+			)
 		)
 	)
 	(element RewardItem _reward = "rewardComponent")
