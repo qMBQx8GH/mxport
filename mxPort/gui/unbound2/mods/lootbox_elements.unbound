@@ -169,7 +169,7 @@
 		(style (position = "absolute") (top = 17%) (left = "{1280:MS, 1920:XL}"))
 		(block
 			(style (position = "absolute") (left = -30px) (width = 380px) (height = 100%))
-			(controller $Instance renderer='BlurMapWithLayerContrastPanel'
+			(controller $Instance renderer='BlurMap'
 				(bind enabled "isNotShipPresentation")
 				(args
 					_blurType = "BLUR_TYPE.LOW_SPHERE"
