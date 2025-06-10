@@ -9,9 +9,8 @@
 )
 
 
-(def element Lootboxes ()
+(def element BargeDockInset ()
 	(scope
-		(macro STAGE_SIZE)
 		(event openLootboxClicked)
 		(event evDelayedUpdate)
 
@@ -97,13 +96,31 @@
 		(var visibleLootboxesCount:number = "lootboxesInStorage" watch=false)
 		(bind visibleLootboxesCount "lootboxesInStorage" watch=false init=false (event "evDelayedUpdate"))
 	)
+	(name = 'barge')
 	(macro HIDE_UI_ON_SHIPOVERVIEW)
 
 	(dispatch evDelayedUpdate delay="lootboxesInStorage > 0 ? 0 : 0.22" (bind trigger "lootboxesInStorage"))
 	(bindcall externalCall 'inputMapping.onRequest' "[requestName, requestParams]" init=false watch=false (event "lootboxStateEntity.lootboxOpeningState.evLootboxesOpenEnded"))
 	(dispatch hideRewards args="{}" dir="EventDirection.DOWN" (event "openLootboxClicked") (bind enabled "isAnimationOpen"))
 	
-	(style (bind width "stageWidth") (bind height "stageHeight"))
+	(class $Fullsize)
+	(style
+		
+		(bind alpha "0"			on='addedToStage' on='removedFromStage')
+		(bind hitTest "false"	on='addedToStage' on='removedFromStage')
+	)
+	
+	(controller $Animation
+		(bindcall play
+			delay = 1
+			duration = 0.3
+			from = "{ alpha: 0, hitTest:false }"
+			to = "{ alpha: 1, hitTest: true }"
+			easing = "Easing.quad_out"
+			action = "kill"
+			on = 'addedToStage'
+		)
+	)
 
 	(block
 		(style (marginLeft = "{1280:MS, 1920:XL}") (marginTop = "{720:M, 1080:L}") (bind hitTest "!isAnimationActive"))
