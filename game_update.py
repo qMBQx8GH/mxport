@@ -16,6 +16,7 @@ version = xml_version[0].attrib['installed']
 
 content = [
     'gui/unbound2/pc/lootboxes/lootbox_elements.unbound',
+    'gui/unbound2/pc/battlepass/battlepass_main.unbound',
 ]
 print(version)
 for d in content:
