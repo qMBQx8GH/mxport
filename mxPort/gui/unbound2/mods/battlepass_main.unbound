@@ -39,9 +39,9 @@
 		(var collectionRewards:dhCollection = "getCollectionByPath(CC.battlePassReward, 'unclaimedRewards')")
 		(var hasReward:bool = "collectionRewards.length > 0")
 
-		(var bpTitle:str = "isBattlePassFree			? 'IDS_BATTLEPASS_TYPE_FREE_FULL_TITLE' :
+		(var bpTitle:str = "isBattlePassFree			? 'IDS_BATTLEPASS_TYPE_FREE' :
 							isBattlePassPaidEnhanced	? 'IDS_BATTLEPASS_TYPE_PAID_ENHANCED'
-														: 'IDS_BATTLEPASS_TYPE_PAID_REGULAR_FULL_TITLE'")
+														: 'IDS_BATTLEPASS_TYPE_PAID_REGULAR'")
 
 		(macro SERVER_TIME_SCOPE)
 		(macro COUNTDOWN_SCOPE "'formattedFinishTime'" "finishTime" "'HIGHEST,WITH_DAYS'")
@@ -58,7 +58,7 @@
 		(var isLargeDimension:bool = "stageWidth > 1760 && stageHeight > 900")
 		(var btnWidth:number =	"isLargeDimension ? MAIN_TAB_BUTTON_WIDTH.LARGE : MAIN_TAB_BUTTON_WIDTH.SMALL")
 		(var btnSize:number =	"isLargeDimension ? SIZE.LARGE : SIZE.MEDIUM")
-		(var animationHeight:number = "isLargeDimension ? 48 : 32")
+		(var animationHeight:number = "isLargeDimension ? 44 : 32")
 		(var btnAnimationName:str = "	isBattlePassPaidEnhanced	? '' :
 										isLargeDimension			? 'url:../animations/spine/battlepass/button_purchase/glow.skel'
 																	: 'url:../animations/spine/battlepass/button_purchase/glow_min.skel'")
@@ -83,7 +83,10 @@
 	(block
 		(macro DEFAULT_MODAL_WINDOW_ANIMATION 4.5)
 		(class $FullsizeAbsolute)
-		(style (bind backgroundImage "screenBg") (backgroundSize = "fill"))
+		(style
+			(backgroundSize = "fill")
+			(bind backgroundImage "screenBg")
+		)
 	)
 
 	
@@ -120,8 +123,11 @@
 		)
 
 		(tf
-			(class $TextDefaultBold21NM)
-			(style (marginBottom = "SXS") (alpha = "TA"))
+			(class $TextDefaultBold36NM)
+			(style
+				(marginBottom = "SXS")
+				(alpha = "TA")
+			)
 			(bind text "toUpper(tr(bpTitle))")
 		)
 
@@ -136,7 +142,9 @@
 
 		(block
 			(style (marginBottom = "M"))
-			(element BattlePassStatus _isBattlePassFree = "isBattlePassFree")
+			(element BattlePassStatus
+				_isBattlePassFree = "isBattlePassFree"
+			)
 		)
 
 		(hblock
@@ -192,10 +200,10 @@
 	(hblock
 		(macro DEFAULT_MODAL_WINDOW_ANIMATION 3.5)
 		(style
+			(gap = "S")
 			(position = "absolute")
 			(left = "BP_WINDOW_HORIZONTAL_MARGINS")
 			(bind bottom "bpInfoPosition")
-			(gap = "S")
 		)
 
 		(block
@@ -220,7 +228,9 @@
 			(controller $Tooltip
 				(bind enabled "isLastLevel")
 				(renderer = 'SimpleStatusTooltip')
-				(args _text = 'IDS_BATTLEPASS_STATUS_BUTTON_BOOST_TOOLTIP')
+				(args
+					_text = 'IDS_BATTLEPASS_STATUS_BUTTON_BOOST_TOOLTIP'
+				)
 				(macro DEFAULT_TOOLTIP_BEHAVIOUR)
 			)
 		)
@@ -229,8 +239,8 @@
 			(dispatch evForceScrollToIndex dir="EventDirection.DOWN" (event "evTakeRewardsButtonClicked"))
 			(dispatch evTakeRewardClicked dir="EventDirection.DOWN" delay=0.5 (event "evForceScrollToIndex"))
 			(dispatch evOpenModal delay="REWARD_PROGRESS_ANIMATION_TIME" (event "evTakeRewardClicked"))
-			(bindcall externalCall "'inputMapping.onRequest'" "['openRewardsModal', {	rewardsEntityId: claimRewardsStackId,
-																						header: 'IDS_RECEIVED_LOOTBOXES_REWARDS' }]" watch=false (event "evOpenModal"))
+			(bindcall externalCall "'inputMapping.onRequest'" "['openRewardsModalWithoutAnimation', {	rewardsEntityId: claimRewardsStackId,
+																										header: 'IDS_RECEIVED_LOOTBOXES_REWARDS' }]" watch=false (event "evOpenModal"))
 
 			(element DefaultButton
 				_name='take_rewards'
@@ -250,7 +260,9 @@
 			(controller $Tooltip
 				(bind enabled "isLastLevel && !hasReward")
 				(renderer = 'SimpleStatusTooltip')
-				(args _text = 'IDS_BATTLEPASS_STATUS_BUTTON_REWARDS_TOOLTIP')
+				(args
+					_text = 'IDS_BATTLEPASS_STATUS_BUTTON_REWARDS_TOOLTIP'
+				)
 				(macro DEFAULT_TOOLTIP_BEHAVIOUR)
 			)
 		)
@@ -259,7 +271,13 @@
 	
 	(block
 		(macro DEFAULT_MODAL_WINDOW_ANIMATION 3)
-		(style (position = "absolute") (right = "BP_WINDOW_HORIZONTAL_MARGINS") (bind bottom "bpInfoPosition"))
-		(element BattlePassRewardInfo _rewardEntityId = "observableReward")
+		(style
+			(position = "absolute")
+			(right = "BP_WINDOW_HORIZONTAL_MARGINS")
+			(bind bottom "bpInfoPosition")
+		)
+		(element BattlePassRewardInfo
+			_rewardEntityId = "observableReward"
+		)
 	)
 )

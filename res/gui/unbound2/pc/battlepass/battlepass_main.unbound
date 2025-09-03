@@ -9,13 +9,14 @@
 (def constant REWARD_PROGRESS_ANIMATION_TIME 3)
 (def constant BP_PROGRESSBAR_HEIGHT 10)
 (def constant BP_PROGRESSBAR_NUMBERS_OFFSET 28)
-(def constant BP_WINDOW_HORIZONTAL_MARGINS "{1280:16, 1920:64}")
+(def constant BP_WINDOW_HORIZONTAL_MARGINS "{1280:16, 1920:32}")
 (def constant BP_WINDOW_VERTICAL_MARGINS "{720:40, 1080:80}")
 (def constant BP_LEVELS_TO_SHOW_BEFORE_CURRENT_LEVEL 4)
 
 (def css $BPCarouselVertBorder ()
 	(position = "absolute")
-	(width = 1px) (height = 100%)
+	(width = 1px)
+	(height = 100%)
 	(backgroundColor = "SC.Ui_styles.SERVICE_COLORS.WHITE")
 	(alpha = 0.1)
 )
@@ -56,7 +57,7 @@
 			(bind visible "!_isBattlePassPaidEnhanced")
 			(style
 				(hitTest = false)
-				(backgroundImage = 'url:../animations/spine/reward_states/available.skel')
+				(backgroundImage = 'url:../animations/spine/rewards/reward_states/available.skel')
 				(backgroundSize = "cover")
 				(position = "absolute")
 				(top = -80px)
@@ -96,7 +97,7 @@
 				(controller $Spine)
 			)
 
-			(block	
+			(block
 				(element DefaultButton
 					_name = "_isBattlePassFree ? 'upgrade_battlepass' : 'buy_bonuses'"
 					_width = "_btnWidth"
@@ -160,9 +161,9 @@
 		(var collectionRewards:dhCollection = "getCollectionByPath(CC.battlePassReward, 'unclaimedRewards')")
 		(var hasReward:bool = "collectionRewards.length > 0")
 
-		(var bpTitle:str = "isBattlePassFree			? 'IDS_BATTLEPASS_TYPE_FREE_FULL_TITLE' :
+		(var bpTitle:str = "isBattlePassFree			? 'IDS_BATTLEPASS_TYPE_FREE' :
 							isBattlePassPaidEnhanced	? 'IDS_BATTLEPASS_TYPE_PAID_ENHANCED'
-														: 'IDS_BATTLEPASS_TYPE_PAID_REGULAR_FULL_TITLE'")
+														: 'IDS_BATTLEPASS_TYPE_PAID_REGULAR'")
 
 		(macro SERVER_TIME_SCOPE)
 		(macro COUNTDOWN_SCOPE "'formattedFinishTime'" "finishTime" "'HIGHEST,WITH_DAYS'")
@@ -179,7 +180,7 @@
 		(var isLargeDimension:bool = "stageWidth > 1760 && stageHeight > 900")
 		(var btnWidth:number =	"isLargeDimension ? MAIN_TAB_BUTTON_WIDTH.LARGE : MAIN_TAB_BUTTON_WIDTH.SMALL")
 		(var btnSize:number =	"isLargeDimension ? SIZE.LARGE : SIZE.MEDIUM")
-		(var animationHeight:number = "isLargeDimension ? 48 : 32")
+		(var animationHeight:number = "isLargeDimension ? 44 : 32")
 		(var btnAnimationName:str = "	isBattlePassPaidEnhanced	? '' :
 										isLargeDimension			? 'url:../animations/spine/battlepass/button_purchase/glow.skel'
 																	: 'url:../animations/spine/battlepass/button_purchase/glow_min.skel'")
@@ -204,7 +205,10 @@
 	(block
 		(macro DEFAULT_MODAL_WINDOW_ANIMATION 4.5)
 		(class $FullsizeAbsolute)
-		(style (bind backgroundImage "screenBg") (backgroundSize = "fill"))
+		(style
+			(backgroundSize = "fill")
+			(bind backgroundImage "screenBg")
+		)
 	)
 
 	
@@ -241,8 +245,11 @@
 		)
 
 		(tf
-			(class $TextDefaultBold21NM)
-			(style (marginBottom = "SXS") (alpha = "TA"))
+			(class $TextDefaultBold36NM)
+			(style
+				(marginBottom = "SXS")
+				(alpha = "TA")
+			)
 			(bind text "toUpper(tr(bpTitle))")
 		)
 
@@ -257,7 +264,9 @@
 
 		(block
 			(style (marginBottom = "M"))
-			(element BattlePassStatus _isBattlePassFree = "isBattlePassFree")
+			(element BattlePassStatus
+				_isBattlePassFree = "isBattlePassFree"
+			)
 		)
 
 		(hblock
@@ -313,10 +322,10 @@
 	(hblock
 		(macro DEFAULT_MODAL_WINDOW_ANIMATION 3.5)
 		(style
+			(gap = "S")
 			(position = "absolute")
 			(right = "BP_WINDOW_HORIZONTAL_MARGINS")
 			(bind bottom "bpInfoPosition")
-			(gap = "S")
 		)
 
 		(block
@@ -341,7 +350,9 @@
 			(controller $Tooltip
 				(bind enabled "isLastLevel")
 				(renderer = 'SimpleStatusTooltip')
-				(args _text = 'IDS_BATTLEPASS_STATUS_BUTTON_BOOST_TOOLTIP')
+				(args
+					_text = 'IDS_BATTLEPASS_STATUS_BUTTON_BOOST_TOOLTIP'
+				)
 				(macro DEFAULT_TOOLTIP_BEHAVIOUR)
 			)
 		)
@@ -350,8 +361,8 @@
 			(dispatch evForceScrollToIndex dir="EventDirection.DOWN" (event "evTakeRewardsButtonClicked"))
 			(dispatch evTakeRewardClicked dir="EventDirection.DOWN" delay=0.5 (event "evForceScrollToIndex"))
 			(dispatch evOpenModal delay="REWARD_PROGRESS_ANIMATION_TIME" (event "evTakeRewardClicked"))
-			(bindcall externalCall "'inputMapping.onRequest'" "['openRewardsModal', {	rewardsEntityId: claimRewardsStackId,
-																						header: 'IDS_RECEIVED_LOOTBOXES_REWARDS' }]" watch=false (event "evOpenModal"))
+			(bindcall externalCall "'inputMapping.onRequest'" "['openRewardsModalWithoutAnimation', {	rewardsEntityId: claimRewardsStackId,
+																										header: 'IDS_RECEIVED_LOOTBOXES_REWARDS' }]" watch=false (event "evOpenModal"))
 
 			(element DefaultButton
 				_name='take_rewards'
@@ -371,7 +382,9 @@
 			(controller $Tooltip
 				(bind enabled "isLastLevel && !hasReward")
 				(renderer = 'SimpleStatusTooltip')
-				(args _text = 'IDS_BATTLEPASS_STATUS_BUTTON_REWARDS_TOOLTIP')
+				(args
+					_text = 'IDS_BATTLEPASS_STATUS_BUTTON_REWARDS_TOOLTIP'
+				)
 				(macro DEFAULT_TOOLTIP_BEHAVIOUR)
 			)
 		)
@@ -380,8 +393,14 @@
 	
 	(block
 		(macro DEFAULT_MODAL_WINDOW_ANIMATION 3)
-		(style (position = "absolute") (left = "BP_WINDOW_HORIZONTAL_MARGINS") (bind bottom "bpInfoPosition"))
-		(element BattlePassRewardInfo _rewardEntityId = "observableReward")
+		(style
+			(position = "absolute")
+			(right = "BP_WINDOW_HORIZONTAL_MARGINS")
+			(bind bottom "bpInfoPosition")
+		)
+		(element BattlePassRewardInfo
+			_rewardEntityId = "observableReward"
+		)
 	)
 )
 
@@ -406,26 +425,53 @@
 		(bind carouselWidth "$event.bounds[2]" init=false (event "evCarouselBoundsChanged"))
 	)
 	(class $Fullsize)
-	(style (flow = "horizontal") (align = "bottom"))
-
-	(block
-		(style	(position = "absolute") (bottom = 0) (width = 100%) (scale9grid = 2)
-				(bind height "levelDimensions.levelSize") (bind backgroundImage "carouselBg"))
+	(style
+		(flow = "horizontal")
+		(align = "bottom")
 	)
 
 	(block
-		(style	(position = "absolute") (bottom = 0) (width = 55px) (backgroundImage = 'url:../sse/battlepass/carousel_shadow_left.png')
-				(scale9grid = 4) (bind left "levelDimensions.levelSize") (bind height "levelDimensions.levelHeight"))
+		(style
+			(position = "absolute")
+			(bottom = 0)
+			(width = 100%)
+			(scale9grid = 2)
+			(bind height "levelDimensions.levelSize")
+			(bind backgroundImage "carouselBg")
+		)
 	)
 
 	(block
-		(style	(position = "absolute") (bottom = 0) (width = 55px) (backgroundImage = 'url:../sse/battlepass/carousel_shadow_right.png')
-				(scale9grid = 4) (bind right "levelDimensions.levelSize") (bind height "levelDimensions.levelHeight"))
+		(style
+			(position = "absolute")
+			(bottom = 0)
+			(width = 55px)
+			(scale9grid = 4)
+			(backgroundImage = 'url:../sse/battlepass/carousel_shadow_left.png')
+			(bind left "levelDimensions.levelSize")
+			(bind height "levelDimensions.levelHeight")
+		)
 	)
 
-	(element BattlePassTypes _type = "bpType")
+	(block
+		(style
+			(position = "absolute")
+			(bottom = 0)
+			(width = 55px)
+			(scale9grid = 4)
+			(backgroundImage = 'url:../sse/battlepass/carousel_shadow_right.png')
+			(bind right "levelDimensions.levelSize")
+			(bind height "levelDimensions.levelHeight")
+		)
+	)
 
-	(element BattlePassProgressWithRewards _carouselWidth = "carouselWidth")
+	(element BattlePassTypes
+		_type = "bpType"
+	)
+
+	(element BattlePassProgressWithRewards
+		_carouselWidth = "carouselWidth"
+	)
 
 	(element BattlePassLevelFixed
 		_entityId = "observableSpecialLevel"
@@ -451,14 +497,16 @@
 
 	(tf
 		(name = 'battlepass_level')
-		(class $TextDefaultBold21NM)
+		(class $TextDefaultBold22NM)
 		(style (alpha = "TA"))
 		(bind text "subst('IDS_SUBST_BATTLEPASS_CURRENT_LEVEL', [], { _level: level })")
 	)
 
 	(controller $Tooltip
 		(renderer = 'SimpleStatusTooltip')
-		(args _text = "text")
+		(args
+			_text = "text"
+		)
 		(macro DEFAULT_TOOLTIP_BEHAVIOUR)
 	)
 )
@@ -467,7 +515,7 @@
 	(style (flow = "horizontal"))
 
 	(element DefaultDividedCounter
-		_curValueTextClass = '$TextDefaultBold19NM'
+		_curValueTextClass = '$TextDefaultBold20NM'
 		_curValue = "_curValue"
 		_maxValue = "_maxValue"
 		_doNotAlphaOnZeroCurValue = true
@@ -479,7 +527,7 @@
 			(height = 24px)
 			(marginLeft = "S")
 			(marginTop = -7px)
-			(backgroundImage = "'url:../service_kit/currencies/icon_bpPoints.png'")
+			(backgroundImage = 'url:../service_kit/currencies/icon_bpPoints.png')
 		)
 	)
 )
@@ -518,7 +566,8 @@
 		(block
 			(style
 				(position = "absolute")
-				(width = 100%) (height = 1px)
+				(width = 100%)
+				(height = 1px)
 				(backgroundColor = "SC.Ui_styles.SERVICE_COLORS.WHITE")
 				(alpha = 0.1)
 			)
@@ -563,7 +612,10 @@
 
 		(block
 			(class $FullsizeAbsolute)
-			(style (backgroundImage = 'url:../sse/battlepass/bg/level_special_border.png') (scale9grid = 2))
+			(style
+				(backgroundImage = 'url:../sse/battlepass/bg/level_special_border.png')
+				(scale9grid = 2)
+			)
 		)
 
 		(block
@@ -610,27 +662,29 @@
 	(style (width = 340px))
 
 	(element TOOLTIP_SYSTEM_DEFAULT_CONTAINER
-		(element TooltipSystemHeaderSubheaderText _headerText = "title")
-
+		(element TooltipSystemHeaderSubheaderText
+			_headerText = "title"
+		)
 		(element TooltipSystemHorizontalDivider)
 
 		(element TooltipSystemStatusLine
 			_unifiedStatus = "unifiedStatus"
 			_text = "statusText"
 		)
-
 		(element TooltipSystemHorizontalDivider)
 
-		(element TooltipSystemDescriptionText _descriptionText = "description")
-
+		(element TooltipSystemDescriptionText
+			_descriptionText = "description"
+		)
 		(block
 			(style (width = 100%))
-			(controller $Instance renderer='TooltipSystemHorizontalDivider' (bind enabled "!isBattlePassFree"))
+			(controller $Instance renderer='TooltipSystemHorizontalDivider'
+				(bind enabled "!isBattlePassFree")
+			)
 		)
 
 		(block
 			(style (width = 100%))
-
 			(controller $Instance renderer='TooltipSystemStatusLine'
 				(bind enabled "!isBattlePassFree")
 				(args
@@ -652,8 +706,7 @@
 		(struct levelDimensions = BP_LEVEL_SIZE(_stageWidth = "stageWidth"))
 
 		(var battlePassCurrentLevelEntity:dhEntity = "getSingleEntity(CC.battlePassCurrentLevel)")
-		(var currentLevel:number = "battlePassCurrentLevelEntity.battlePassLevel.level" (event "battlePassCurrentLevelEntity.battlePassLevel.evChanged"))
-		(var pointsPerLevel:number = "battlePassCurrentLevelEntity.battlePassLevel.pointsPerLevel ?: 1" (event "battlePassCurrentLevelEntity.battlePassLevel.evChanged"))  
+		(var currentLevel:number = "battlePassCurrentLevelEntity.battlePassLevel.level ?: 1" (event "battlePassCurrentLevelEntity.battlePassLevel.evChanged"))
 
 		(var mainProgressionCollection:dhCollection = "getCollectionByPath(CC.battlePassLevel, 'mainProgression')")
 		(var mainProgressionLen:number = "mainProgressionCollection.length ?: 0")
@@ -663,25 +716,18 @@
 		(var type:number =				"battlePassComponent.type"				(event "battlePassComponent.evChanged"))
 		(var totalPoints:number =		"battlePassComponent.totalPoints"		(event "battlePassComponent.evChanged"))
 		(var maxTotalPoints:number =	"battlePassComponent.maxTotalPoints"	(event "battlePassComponent.evChanged"))
-		(var observableReward:number =	"battlePassComponent.observableReward"	(event "battlePassComponent.evObservableRewardChanged"))
 		(var progress:number = "100% * totalPoints/maxTotalPoints")
-
-		(var observableBattlePassRewardEntity:dhEntity = "getEntity(observableReward)")
-		(var observableBattlePassRewardComponent:dhComponent = "observableBattlePassRewardEntity.battlePassReward")
-		(var observableRewardLevel:number = "observableBattlePassRewardComponent.level ?: 1" (event "observableBattlePassRewardComponent.evRewardStateChanged"))
 
 		(var isBattlePassFree:bool = "type == SC.Common.BATTLEPASS_TYPES.FREE")
 
 		
-		(var levelToScrollTo:number = "max(1, min(mainProgressionLen, observableRewardLevel - BP_LEVELS_TO_SHOW_BEFORE_CURRENT_LEVEL))")
-		(var indexToScrollTo:number = "levelToScrollTo - 1")
+		(var currentLevelIndexToScrollTo:number = "max(1, min(mainProgressionLen, currentLevel - BP_LEVELS_TO_SHOW_BEFORE_CURRENT_LEVEL)) - 1")
 
 		(var progressBarWidth:number = "mainProgressionLen * levelDimensions.levelSize + 1")
 	)
 
-	(dispatch evScrollToIndex args="{value: indexToScrollTo}" on='addedToStage')
-	(dispatch evScrollToIndex args="{value: indexToScrollTo}" (bind trigger "totalPoints"))
-	(dispatch evScrollToIndex args="{value: indexToScrollTo}" (event "evForceScrollToIndex"))
+	
+	(dispatch evScrollToIndex args="{value: currentLevelIndexToScrollTo}" delay=0.1 on='addedToStage' (bind trigger "totalPoints") (event "evForceScrollToIndex"))
 	(dispatch 'evCarouselBoundsChanged' dir="EventDirection.UP" args="{bounds: $globalLayoutBounds}" (event "$evLayoutBoundsChanged"))
 	(bindcall externalCall 'sound.playSetSoundDirect' "['battlepass_progressbar', 'start']" (bind trigger "progress"))
 
@@ -705,7 +751,10 @@
 
 			(block
 				(name = 'battlepass_levels')
-				(style (marginLeft = -1px) (bind width "progressBarWidth"))
+				(style
+					(marginLeft = -1px)
+					(bind width "progressBarWidth")
+				)
 
 				(element AnimatedProgressBar
 					_startProgress = 0
@@ -768,7 +817,9 @@
 																			: 'url:../animations/spine/battlepass/bp_level_special/type_paid.skel'
 													:	''")
 		)
-		(controller $Spine (bind enabled "isSpecialLevel"))
+		(controller $Spine
+			(bind enabled "isSpecialLevel")
+		)
 	)
 
 	(controller $FxInstance renderer='RewardPaidReceivedAnimation' lifetime="REWARD_PROGRESS_ANIMATION_TIME"
@@ -790,7 +841,7 @@
 			(backgroundColor = "NO_COLOR")
 		)
 		(tf
-			(bind class "isSpecialLevel ? '$TextDefaultBold17NM' : '$TextDefault17NM'")
+			(bind class "isSpecialLevel ? '$TextDefaultBold18NM' : '$TextDefault18NM'")
 			(style (bind alpha "isSpecialLevel ? TA : TS"))
 			(bind text "level")
 		)
@@ -812,15 +863,20 @@
 	(block
 		(block
 			(class $FullsizeAbsolute)
-			(style (backgroundImage = 'url:../sse/battlepass/bg/level_border.png') (scale9grid = 2))
+			(style
+				(backgroundImage = 'url:../sse/battlepass/bg/level_border.png')
+				(scale9grid = 2)
+			)
 		)
 
 		(block
 			(bind visible "_isBattlePassFree")
 			(style
 				(position = "absolute")
-				(top = "SXS") (right = "SXS")
-				(width = 19px) (height = 19px)
+				(top = "SXS")
+				(right = "SXS")
+				(width = 19px)
+				(height = 19px)
 				(alpha = 0.45)
 				(backgroundImage = 'url:../service_kit/unified_status_icons/icon_lock.png')
 			)
@@ -896,7 +952,7 @@
 		(hblock
 			(tf
 				(name = 'important_level')
-				(bind class "isPostProgression ?  '$TextDefault17NM' : '$TextDefaultBold17NM'")
+				(bind class "isPostProgression ?  '$TextDefault18NM' : '$TextDefaultBold18NM'")
 				(style (alpha = "TA"))
 				(bind text "textLevel")
 			)
@@ -960,15 +1016,20 @@
 
 		(block
 			(class $FullsizeAbsolute)
-			(style (backgroundImage = 'url:../sse/battlepass/bg/level_special_border.png') (scale9grid = 2))
+			(style
+				(backgroundImage = 'url:../sse/battlepass/bg/level_special_border.png')
+				(scale9grid = 2)
+			)
 		)
 
 		(block
 			(bind visible "_isBattlePassFree")
 			(style
 				(position = "absolute")
-				(top = "SXS") (right = "SXS")
-				(width = 19px) (height = 19px)
+				(top = "SXS")
+				(right = "SXS")
+				(width = 19px)
+				(height = 19px)
 				(alpha = 0.45)
 				(backgroundImage = 'url:../service_kit/unified_status_icons/icon_lock.png')
 			)
@@ -987,11 +1048,14 @@
 	(style (width = 340px) (hitTest = false))
 
 	(element TOOLTIP_SYSTEM_DEFAULT_CONTAINER
-		(element TooltipSystemHeaderSubheaderText _headerText = 'IDS_BATTLEPASS_STATUS_LEVEL_POST_PROGRESS')
-
+		(element TooltipSystemHeaderSubheaderText
+			_headerText = 'IDS_BATTLEPASS_STATUS_LEVEL_POST_PROGRESS'
+		)
 		(element TooltipSystemHorizontalDivider)
 
-		(element TooltipSystemDescriptionText _descriptionText = 'IDS_BATTLEPASS_INFO_TOOLTIP_POSTPROGRESS')
+		(element TooltipSystemDescriptionText
+			_descriptionText = 'IDS_BATTLEPASS_INFO_TOOLTIP_POSTPROGRESS'
+		)
 	)
 )
 
@@ -1027,7 +1091,7 @@
 		(var animationSize:number = "stageWidth < 1400 ? 200 : 250")
 		(var animationOffset:number = "stageWidth < 1400 ? -40 : -50")
 		(var selectedStateAnimation:str = "isSelected ? 'url:../animations/spine/battlepass/reward_states/selected.skel' : ''")
-		(var availableStateAnimation:str = "isAvailable ? 'url:../animations/spine/reward_states/available.skel' : ''")
+		(var availableStateAnimation:str = "isAvailable ? 'url:../animations/spine/rewards/reward_states/available.skel' : ''")
 		(var isIconCheckEnabled:bool = "isReceived && !_isLevelFixed")
 
 		(macro MOUSE_HANDLER_SCOPE)
@@ -1077,18 +1141,22 @@
 			_isUnavailable = "isReceived"
 			_isReceived = "isReceived && _isLevelFixed"
 			_isBattlePassSmallIconView = true
-			_isClickDisabled = true
 		)
 
 		(block
 			(class $FullsizeAbsolute)
-			(style (align = "center|middle") (hitTest = false))
+			(style
+				(hitTest = false)
+				(align = "center|middle")
+			)
 			(bind visible "isIconCheckEnabled")
 
 			(block
 				(style
-					(width = 48px) (height = 48px)
-					(pivotX = 50%) (pivotY = 50%)
+					(width = 48px)
+					(height = 48px)
+					(pivotX = 50%)
+					(pivotY = 50%)
 					(backgroundImage = 'url:../reward_categories/icon_check.png')
 				)
 
@@ -1211,7 +1279,9 @@
 	(block
 		(macro DETAILED_CARD_ELEMENTS_APPEAR_ANIMATION_BY_ID "rewardId" 0)
 		(style (bind marginBottom "isStatusBlockVisible || isPointsCounterBlockVisible ? M : 0"))
-		(element RewardTitle _rewardEntityId = "rewardId")
+		(element RewardTitle
+			_rewardEntityId = "rewardId"
+		)
 	)
 
 	
@@ -1222,7 +1292,7 @@
 			(args
 				_unifiedStatus = "unifiedStatus"
 				_text = "statusBlockText"
-				_textClass = '$TextDefault19NM'
+				_textClass = '$TextDefault20NM'
 			)
 		)
 	)
@@ -1233,8 +1303,11 @@
 		(bind visible "isPointsCounterBlockVisible")
 
 		(tf
-			(class $TextDefault19NM)
-			(style (marginRight = "S") (alpha = "TC"))
+			(class $TextDefault20NM)
+			(style
+				(marginRight = "S")
+				(alpha = "TC")
+			)
 			(text = 'IDS_BATTLEPASS_CARD_STATUS_POINTS')
 		)
 
@@ -1251,7 +1324,9 @@
 
 			(controller $Tooltip
 				(renderer='SimpleStatusTooltip')
-				(args _text = 'IDS_BATTLEPASS_STATUS_LEVEL_POINTS')
+				(args
+					_text = 'IDS_BATTLEPASS_STATUS_LEVEL_POINTS'
+				)
 				(macro DEFAULT_TOOLTIP_BEHAVIOUR)
 			)
 		)
