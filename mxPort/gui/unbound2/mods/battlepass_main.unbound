@@ -1,4 +1,4 @@
-(def element ModalWindowBattlePassMain ()
+(def element MxModalWindowBattlePassMain ()
 	(macro MODAL_WINDOW_INIT)
 	(scope
 		(event evCarouselScrollValueChanged)

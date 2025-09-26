@@ -26,16 +26,23 @@ files = glob.glob(os.path.join(dist_dir, '*'))
 for f in files:
     os.remove(f)
 
+# Update meta.xml
+meta = ET.parse('mxPort/meta.xml')
+root = meta.getroot()
+element_to_update = root.find('meta').find('version')
+element_to_update.text = version
+meta.write('mxPort/meta.xml', encoding="utf-8", xml_declaration=True)
+
 # Archive name
 target_dir = config['Destination']['folder']
 suffix = config['Destination']['suffix']
-target_file = 'mxport-' + version + '-' + suffix + '.zip'
+target_file = 'mxport-' + version + '.mkmod'
 zip_archive = os.path.join(target_dir, target_file)
 print(zip_archive)
 
 # Make zip archive
 files = glob.glob(os.path.join('mxPort', '**'), recursive=True)
-with zipfile.ZipFile(zip_archive, 'w', zipfile.ZIP_DEFLATED) as zipf:
+with zipfile.ZipFile(zip_archive, 'w', zipfile.ZIP_STORED) as zipf:
     for file in files:
         if os.path.isfile(file):
             zipf.write(file, os.path.join(*(file.split(os.path.sep)[1:])))
