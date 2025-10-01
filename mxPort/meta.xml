@@ -2,7 +2,7 @@
 <meta.xml>
     <meta>
         <id>mxPort</id>
-        <version>25.9.0.0.8821884</version>
+        <version>25.10.0.0.8825509</version>
         <name>Перестановка кнопок</name>
         <description>Переставляет кнопку получения наград БП с правой стороны на левую.</description>
     </meta>

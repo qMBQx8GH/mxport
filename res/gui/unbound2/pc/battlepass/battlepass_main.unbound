@@ -395,7 +395,7 @@
 		(macro DEFAULT_MODAL_WINDOW_ANIMATION 3)
 		(style
 			(position = "absolute")
-			(right = "BP_WINDOW_HORIZONTAL_MARGINS")
+			(left = "BP_WINDOW_HORIZONTAL_MARGINS")
 			(bind bottom "bpInfoPosition")
 		)
 		(element BattlePassRewardInfo
