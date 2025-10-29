@@ -27,8 +27,8 @@
 ```git clone https://github.com/qMBQx8GH/mxPort```
 1. Измените каталог на mxPort
 ```cd mxPort```
-1. Переключитесь на ветку mk
-```git checkout mk```
+1. Переключитесь на ветку mkmod
+```git checkout mkmod```
 1. Скопируйте и отредактируйте build.ini.dist
 ```cp build.ini.dist build.ini```
 1. Создайте архив для распаковки в папку bin\NNNNNNNN\res_mods в игре.
