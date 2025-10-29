@@ -7,7 +7,7 @@
 (def constant BP_PAID_REWARD_ANIMATION_WIDTH_MIN 1536)
 (def constant BP_PAID_REWARD_ANIMATION_WIDTH_MAX 1920)
 (def constant REWARD_PROGRESS_ANIMATION_TIME 3)
-(def constant BP_PROGRESSBAR_HEIGHT 10)
+(def constant BP_PROGRESSBAR_HEIGHT 8)
 (def constant BP_PROGRESSBAR_NUMBERS_OFFSET 28)
 (def constant BP_WINDOW_HORIZONTAL_MARGINS "{1280:16, 1920:32}")
 (def constant BP_WINDOW_VERTICAL_MARGINS "{720:40, 1080:80}")
@@ -551,8 +551,8 @@
 	(element AnimatedProgressBar
 		_startProgress = 0
 		_progress = 100
-		_progressbarMotionDuration = "0.3"
-		_height = "BP_PROGRESSBAR_HEIGHT"
+		_size = "SIZE.MEDIUM"
+		_isRounded = false
 	)
 
 	
@@ -754,13 +754,15 @@
 				(style
 					(marginLeft = -1px)
 					(bind width "progressBarWidth")
+					(paddingLeft = 1px)
+					(paddingRight = 1px)
 				)
 
 				(element AnimatedProgressBar
 					_startProgress = 0
 					_progress = "progress < 100 ? progress : 100"
-					_progressbarMotionDuration = "0.3"
-					_height = "BP_PROGRESSBAR_HEIGHT"
+					_size = "SIZE.MEDIUM"
+					_isRounded = false
 				)
 			)
 
@@ -892,10 +894,10 @@
 	(block
 		(style
 			(position = "absolute")
-			(top = "-BP_PROGRESSBAR_HEIGHT+1")
+			(top = "-BP_PROGRESSBAR_HEIGHT")
 			(right = 0)
 			(width = 1px)
-			(height = "BP_PROGRESSBAR_HEIGHT-1")
+			(height = "BP_PROGRESSBAR_HEIGHT")
 			(backgroundColor = 0xCC535555)
 		)
 	)
@@ -986,8 +988,8 @@
 		(element AnimatedProgressBar
 			_startProgress = "previousProgress"
 			_progress = "progress"
-			_progressbarMotionDuration = "0.3"
-			_height = "BP_PROGRESSBAR_HEIGHT"
+			_size = "SIZE.MEDIUM"
+			_isRounded = false
 		)
 	)
 
