@@ -12,6 +12,44 @@
 (def constant BP_WINDOW_HORIZONTAL_MARGINS "{1280:16, 1920:32}")
 (def constant BP_WINDOW_VERTICAL_MARGINS "{720:40, 1080:80}")
 (def constant BP_LEVELS_TO_SHOW_BEFORE_CURRENT_LEVEL 4)
+(def constant BP_SPINE_PATH 'url:../animations/spine/battlepass/')
+
+(def constant CT_FREE_REWARD_AVAILABLE "{
+	redMultiplier: 0.2,
+	greenMultiplier: 0.95,
+	blueMultiplier: 1.05,
+	alphaMultiplier: 0.9,
+	redOffset: 60,
+	greenOffset: 60,
+	blueOffset: 60,
+	alphaOffset: 0
+}")
+
+(def constant CT_PAID_REWARD_AVAILABLE "{
+	redMultiplier: 1.3,
+	greenMultiplier: 0.7,
+	blueMultiplier: 0.2,
+	alphaMultiplier: 0.9,
+	redOffset: 60,
+	greenOffset: 60,
+	blueOffset: 60,
+	alphaOffset: 0
+}")
+
+(def constant BP_CHOICE_BUTTON_WARNING "{
+	NONE: 0,
+	LOCKED_BY_TYPE_AND_LEVEL: 1,
+	LOCKED_BY_LEVEL: 2,
+	LOCKED_BY_BONUSES: 3
+}")
+
+(def constant CELL_ALPHA "{
+	SC.Ui_styles.BUTTON_STATE.DISABLED	: 0.02,
+	SC.Ui_styles.BUTTON_STATE.SELECTED	: 0.1,
+	SC.Ui_styles.BUTTON_STATE.DOWN		: 0.02,
+	SC.Ui_styles.BUTTON_STATE.OVER		: 0.1,
+	SC.Ui_styles.BUTTON_STATE.UP		: 0.05
+}")
 
 (def css $BPCarouselVertBorder ()
 	(position = "absolute")
@@ -31,94 +69,6 @@
 	(right = 0)
 )
 
-(def struct BP_LEVEL_SIZE (_stageWidth:expression)
-	(var levelSize:number = "_stageWidth < 1400 ? BP_LEVEL_SIZE_MIN : BP_LEVEL_SIZE_MAX")
-	(var levelHeight:number = "levelSize * 2")
-)
-
-(def element BattlePassUpgradeButton (	_btnAnimationName:str, _btnWidth:number, _animationHeight:number, _btnSize:number,
-										_btnText:str, _isBattlePassPaidEnhanced:bool, _isBattlePassFree:bool, _buttonBpImagePosition:number,
-										_type:str="SC.Ui_styles.BUTTON_TYPE.DEFAULT")
-	(scope
-		(macro MOUSE_HANDLER_SCOPE)
-
-		(event evBtnPurchaseBPEmitter)
-	)
-
-	(bindcall externalCall 'inputMapping.onRequest' "['purchaseBattlePass', []]" init=false watch=false (event "evBtnPurchaseBPEmitter"))
-
-	(hblock
-		(style
-			(align = "middle")
-			(bind marginTop "!_isBattlePassPaidEnhanced ? -20px : 0px")
-		)
-
-		(block
-			(bind visible "!_isBattlePassPaidEnhanced")
-			(style
-				(hitTest = false)
-				(backgroundImage = 'url:../animations/spine/rewards/reward_states/available.skel')
-				(backgroundSize = "cover")
-				(position = "absolute")
-				(top = -80px)
-				(left = -80px)
-				(width = 250px)
-				(height = 250px)
-			)
-			(controller $Spine (bind enabled "!_isBattlePassPaidEnhanced"))
-		)
-
-		(block
-			(bind visible "!_isBattlePassPaidEnhanced")
-			(style
-				(hitTest = false)
-				(width = 80px)
-				(height = 80px)
-				(marginRight = -20px)
-				(backgroundImage = 'url:../sse/battlepass/types/small/paid_enhanced.png')
-				(backgroundSize = "cover")
-				(left = "-XL")
-				(bind top "_buttonBpImagePosition")
-				(zindex = 1)
-			)
-		)
-
-		(block
-			(style (zindex = 0))
-			(block
-				(class $FullsizeAbsolute)
-				(style
-					(hitTest = false)
-					(backgroundSize = "cover")
-					(bind backgroundImage "_btnAnimationName")
-					(bind width "_btnWidth")
-					(bind height "_animationHeight")
-				)
-				(controller $Spine)
-			)
-
-			(block
-				(element DefaultButton
-					_name = "_isBattlePassFree ? 'upgrade_battlepass' : 'buy_bonuses'"
-					_width = "_btnWidth"
-					_size = "_btnSize"
-					_label = "_btnText"
-					_focusIndex = 1
-					_type = "SC.Ui_styles.BUTTON_TYPE.SECONDARY"
-					_isTransactionBtn = true
-					_externalRollover = "rollOver"
-					_externalMouseDown = "mouseDown"
-					_dispatchedEv = 'evBtnPurchaseBPEmitter'
-				)
-			)
-		)
-	)
-
-	(macro MOUSE_HANDLER
-		_methods = "[{type: 'inputMapping.onRequest', name: 'purchaseBattlePass', args: {}}]"
-		_soundSet = "'button_' + _type"
-	)
-)
 
 (def element ModalWindowBattlePassMain ()
 	(macro MODAL_WINDOW_INIT)
@@ -134,8 +84,7 @@
 		(var battlePassResearchEntity:dhEntity = "getPrimaryEntity(CC.splitRunTest, 'BattlePass_Research')")
 		(var isEndSeasonOfferDeactivated:bool = "battlePassResearchEntity.splitRunTest.data.isEndSeasonOfferDeactivated" (event "battlePassResearchEntity.splitRunTest.evDataChanged"))
 
-		(var battlePassCurrentLevelEntity:dhEntity = "getSingleEntity(CC.battlePassCurrentLevel)")
-		(var currentLevel:number = "battlePassCurrentLevelEntity.battlePassLevel.level" (event "battlePassCurrentLevelEntity.battlePassLevel.evChanged"))
+		(struct battlePassCurrentLevel = PULL_BATTLEPASS_CURRENT_LEVEL())
 
 		(var battlePassEntity:dhEntity = "getSingleEntity(CC.battlePass)")
 		(var battlePassComponent:dhComponent = "battlePassEntity.battlePass")
@@ -143,64 +92,80 @@
 		(var isEndSeasonOfferAvailable:bool =		"battlePassComponent.isEndSeasonOfferAvailable"			(event "battlePassComponent.evEndSeasonOfferAvailable"))
 		(var isStartSeasonReminderAvailable:bool =	"battlePassComponent.isStartSeasonReminderAvailable"	(event "battlePassComponent.evStartSeasonReminderAvailable"))
 		(var isEndSeasonReminderAvailable:bool =	"battlePassComponent.isEndSeasonReminderAvailable"		(event "battlePassComponent.evEndSeasonReminderAvailable"))
-		(var bpType:number =						"battlePassComponent.type"								(event "battlePassComponent.evChanged"))
 		(var bpId:number =							"battlePassComponent.id"								(event "battlePassComponent.evChanged"))
 		(var observableReward:number =				"battlePassComponent.observableReward"					(event "battlePassComponent.evObservableRewardChanged"))
 		(var claimRewardsStackId:number =			"battlePassComponent.previewRewardsStack"				(event "battlePassComponent.evChanged"))
-		(var finishTime:number =					"battlePassComponent.finishTime"						(event "battlePassComponent.evChanged"))
+		(var hasMultiRewards:bool =					"battlePassComponent.hasMultiRewards"					(event "battlePassComponent.evChanged"))
+		(var hasUnclaimedMultipleRewards:bool =		"battlePassComponent.hasUnclaimedMultiRewards"			(event "battlePassComponent.evChanged"))
 
-		(var isBattlePassFree:bool =			"bpType == SC.Common.BATTLEPASS_TYPES.FREE")
-		(var isBattlePassPaidEnhanced:bool =	"bpType == SC.Common.BATTLEPASS_TYPES.PAID_ENHANCED")
+		(struct bpType = PULL_BATTLEPASS_TYPE (_component = "battlePassComponent"))
 
 		(var postProgressionEntity:dhEntity = "getSingleEntity(CC.battlePassPostProgressionLevel)")
 		(var isPostProgression:bool = "postProgressionEntity.battlePassLevel.isUnlocked" (event "postProgressionEntity.battlePassLevel.evChanged"))
 
 		(var collectionLevels:dhCollection = "getCollection(CC.battlePassLevel)")
-		(var isLastLevel:bool = "currentLevel == collectionLevels.length")
+		(var isLastLevel:bool = "battlePassCurrentLevel.level == collectionLevels.length")
 
 		(var collectionRewards:dhCollection = "getCollectionByPath(CC.battlePassReward, 'unclaimedRewards')")
 		(var hasReward:bool = "collectionRewards.length > 0")
 
-		(var bpTitle:str = "isBattlePassFree			? 'IDS_BATTLEPASS_TYPE_FREE' :
-							isBattlePassPaidEnhanced	? 'IDS_BATTLEPASS_TYPE_PAID_ENHANCED'
-														: 'IDS_BATTLEPASS_TYPE_PAID_REGULAR'")
+		(var isClaimRequestEnabled:bool = "hasUnclaimedMultipleRewards && !bpType.isPaidEnhanced")
 
-		(macro SERVER_TIME_SCOPE)
-		(macro COUNTDOWN_SCOPE "'formattedFinishTime'" "finishTime" "'HIGHEST,WITH_DAYS'")
-		(var timeLeft:number = "finishTime - serverTime")
-		(var unifiedStatus:str = "timeLeft < DAY_IN_SEC	? SC.Ui_styles.UNIFIED_STATUS.DATE_ATTENTION
-														: SC.Ui_styles.UNIFIED_STATUS.DATE")
+		(var bpTitle:str = "bpType.isFree			? 'IDS_BATTLEPASS_TYPE_FREE' :
+							bpType.isPaidEnhanced	? 'IDS_BATTLEPASS_TYPE_PAID_ENHANCED'
+													: 'IDS_BATTLEPASS_TYPE_PAID_REGULAR'")
 
 		(var scrollPosition:number = 0)
 		(var carouselWidth:number = 0)
 		(bind scrollPosition "$event.newValue" init=false (event "evCarouselScrollValueChanged"))
 		(bind carouselWidth "$event.bounds[2]" init=false (event "evCarouselBoundsChanged"))
 
-		(var isBoostButtonVisible:bool = "!isBattlePassFree && !isPostProgression")
-		(var isLargeDimension:bool = "stageWidth > 1760 && stageHeight > 900")
-		(var btnWidth:number =	"isLargeDimension ? MAIN_TAB_BUTTON_WIDTH.LARGE : MAIN_TAB_BUTTON_WIDTH.SMALL")
-		(var btnSize:number =	"isLargeDimension ? SIZE.LARGE : SIZE.MEDIUM")
-		(var animationHeight:number = "isLargeDimension ? 44 : 32")
-		(var btnAnimationName:str = "	isBattlePassPaidEnhanced	? '' :
-										isLargeDimension			? 'url:../animations/spine/battlepass/button_purchase/glow.skel'
-																	: 'url:../animations/spine/battlepass/button_purchase/glow_min.skel'")
-		(var btnText:str = "isBattlePassFree			? 'IDS_BATTLEPASS_STATUS_BUTTON_IMPROVEMENT' :
-							isBattlePassPaidEnhanced	? 'IDS_BATTLEPASS_PURCHASE_TITLE'
-														: 'IDS_BATTLEPASS_PURCHASE_BUTTON_BONUSES'")
-		(var buttonBpImagePosition:number = "isLargeDimension ? -M : -MS")
-		(var screenBg:str = "isBattlePassFree ? 'url:../sse/battlepass/bg/screen_free.png' : 'url:../sse/battlepass/bg/screen_paid.png'")
-		(var bpInfoPosition:number = "LS + levelDimensions.levelHeight + BP_PROGRESSBAR_NUMBERS_OFFSET + L")
+		(var isBoostButtonVisible:bool = "!bpType.isFree && !isPostProgression && !isLastLevel")
 
-		(var isShowProgressAnimation:bool = "false")
+		(var isLargeDimension:bool = "stageWidth > 1760 && stageHeight > 900")
+		(var btnWidth:number = "isLargeDimension ? 220px : 180px")
+		(var btnSize:number = "isLargeDimension ? SIZE.LARGE : SIZE.MEDIUM")
+		(var btnText:str = "bpType.isFree			? 'IDS_BATTLEPASS_STATUS_BUTTON_IMPROVEMENT' :
+							bpType.isPaidEnhanced	? 'IDS_BATTLEPASS_PURCHASE_TITLE'
+													: 'IDS_BATTLEPASS_PURCHASE_BUTTON_BONUSES'")
+		(var btnName:str = "bpType.isFree			? 'btn_battlepass_improvements' :
+							bpType.isPaidEnhanced	? 'btn_battlepass_improvements_and_bonuses'
+													: 'btn_battlepass_purchase_bonuses'")
+
+		(var screenBg:str = "bpType.isFree ? 'url:../sse/battlepass/bg/screen_free.png' : 'url:../sse/battlepass/bg/screen_paid.png'")
+		(var bpInfoPosition:number = "LS + levelDimensions.height + BP_PROGRESSBAR_NUMBERS_OFFSET + L")
+
+		(var isShowProgressAnimation:bool = false)
 		(bind isShowProgressAnimation "true" init=false (event "evTakeRewardsButtonClicked"))
 		(bind isShowProgressAnimation "false" init=false (event "evOpenModal"))
 	)
 	(name = 'window_ModalWindowBattlePassMain')
-	(bindcall externalCall "isStartSeasonReminderAvailable ? 'inputMapping.onAction' : ''" "['BattlePassProxyUSS.setBattlePassFlag', {battlePassFlag: SC.Common.BATTLEPASS_SEASON_FLAGS.START_SEASON_REMINDER_SHOWN}]" on='addedToStage')
-	(bindcall externalCall "isEndSeasonReminderAvailable ? 'inputMapping.onAction' : ''" "['BattlePassProxyUSS.setBattlePassFlag', {battlePassFlag: SC.Common.BATTLEPASS_SEASON_FLAGS.END_SEASON_REMINDER_SHOWN}]" on='addedToStage')
-
-	(bindcall externalCall "isOnboardingNeeded ? 'inputMapping.onRequest' : ''" "['showBattlePassOnboarding', { }]" on='addedToStage')
-	(bindcall externalCall "!isEndSeasonOfferDeactivated && isEndSeasonOfferAvailable ? 'inputMapping.onRequest' : ''" "['showBattlePassFastRewardsSale', { }]" on='addedToStage')
+	(bindcall externalCall
+		"isStartSeasonReminderAvailable && !hasMultiRewards ? 'inputMapping.onAction' : ''"
+		"['BattlePassProxyUSS.setBattlePassFlag', {battlePassFlag: SC.Common.BATTLEPASS_SEASON_FLAGS.START_SEASON_REMINDER_SHOWN}]"
+		on='addedToStage'
+	)
+	(bindcall externalCall
+		"isEndSeasonReminderAvailable ? 'inputMapping.onAction' : ''"
+		"['BattlePassProxyUSS.setBattlePassFlag', {battlePassFlag: SC.Common.BATTLEPASS_SEASON_FLAGS.END_SEASON_REMINDER_SHOWN}]"
+		on='addedToStage'
+	)
+	(bindcall externalCall
+		"isOnboardingNeeded ? 'inputMapping.onRequest' : ''"
+		"['showBattlePassOnboarding', { }]"
+		on='addedToStage'
+	)
+	(bindcall externalCall
+		"!isEndSeasonOfferDeactivated && isEndSeasonOfferAvailable ? 'inputMapping.onRequest' : ''"
+		"['showBattlePassFastRewardsSale', { }]"
+		on='addedToStage'
+	)
+	(bindcall externalCall
+		"'inputMapping.onRequest'"
+		"['openRewardsModalWithoutAnimation', {	rewardsEntityId: claimRewardsStackId, header: 'IDS_RECEIVED_LOOTBOXES_REWARDS' }]"
+		watch=false
+		(event "battlePassComponent.evShowRewards")
+	)
 
 	(block
 		(macro DEFAULT_MODAL_WINDOW_ANIMATION 4.5)
@@ -230,9 +195,13 @@
 			_paddingRight = "M"
 			_paddingLeft = "M"
 			_closeIconName = 'battlePassMainScreenEsc'
-			_methods = "[	{	type: 'inputMapping.onRequest',
-								name: 'goToPort',
-								args: {}}]"
+			_methods = "[
+				{
+					type: 'inputMapping.onRequest',
+					name: 'goToPort',
+					args: {}
+				}
+			]"
 		)
 	)
 
@@ -256,16 +225,13 @@
 		(block
 			(name = 'battlepass_timer')
 			(style (marginBottom = "{720:L, 1080:LM}"))
-			(element StatusLine
-				_text = "subst('IDS_SUBST_BATTLEPASS_STATUS_TIME', [], { timeLeft: formattedFinishTime })"
-				_unifiedStatus  = "unifiedStatus"
-			)
+			(element BattlePassTimer)
 		)
 
 		(block
 			(style (marginBottom = "M"))
 			(element BattlePassStatus
-				_isBattlePassFree = "isBattlePassFree"
+				_isBattlePassFree = "bpType.isFree"
 			)
 		)
 
@@ -273,12 +239,18 @@
 			(style (gap = "M"))
 
 			(element DefaultButton
-				_name = 'tasks'
+				_name = 'btn_battlepass_sse_tasks'
 				_width = 180
 				_type = "SC.Ui_styles.BUTTON_TYPE.SECONDARY"
 				_focusIndex = 4
 				_label = 'IDS_BATTLEPASS_TASKS_BUTTON'
-				_methods = "[{type: 'inputMapping.onRequest', name: 'showBattlePassTasks', args: {}}]"
+				_methods = "[
+					{
+						type: 'inputMapping.onRequest',
+						name: 'showBattlePassTasks',
+						args: {}
+					}
+				]"
 			)
 
 			(element DefaultButton
@@ -289,9 +261,13 @@
 				_focusIndex = 2
 				_isTransactionBtn = true
 				_label = 'IDS_BATTLEPASS_INFO_TEXT_0'
-				_methods = "[	{	type: 'inputMapping.onRequest',
-									name: 'showBattlePassOnboarding',
-									args: { }}]"
+				_methods = "[
+					{
+						type: 'inputMapping.onRequest',
+						name: 'showBattlePassOnboarding',
+						args: { }
+					}
+				]"
 			)
 		)
 	)
@@ -302,19 +278,14 @@
 		(style
 			(position = "absolute")
 			(right = "BP_WINDOW_HORIZONTAL_MARGINS")
-			(top = "BP_WINDOW_VERTICAL_MARGINS")
+			(bind top "bpType.isPaidEnhanced ? {720:20px, 1080:60px} : BP_WINDOW_VERTICAL_MARGINS")
 		)
 
 		(element BattlePassUpgradeButton
-			_btnAnimationName = "btnAnimationName"
-			_btnWidth = "btnWidth"
-			_animationHeight = "animationHeight"
 			_btnSize = "btnSize"
 			_btnText = "btnText"
-			_isBattlePassPaidEnhanced = "isBattlePassPaidEnhanced"
-			_isBattlePassFree = "isBattlePassFree"
-			_buttonBpImagePosition = "buttonBpImagePosition"
-			_type = "SC.Ui_styles.BUTTON_TYPE.SECONDARY"
+			_btnName = "btnName"
+			_isBattlePassPaidEnhanced = "bpType.isPaidEnhanced"
 		)
 	)
 
@@ -322,8 +293,8 @@
 	(hblock
 		(macro DEFAULT_MODAL_WINDOW_ANIMATION 3.5)
 		(style
-			(gap = "S")
 			(position = "absolute")
+			(gap = "S")
 			(right = "BP_WINDOW_HORIZONTAL_MARGINS")
 			(bind bottom "bpInfoPosition")
 		)
@@ -338,45 +309,58 @@
 					_width = "btnWidth"
 					_size = "btnSize"
 					_type = "SC.Ui_styles.BUTTON_TYPE.SECONDARY"
-					_enabled = "!isLastLevel && !isShowProgressAnimation"
+					_enabled = "!isShowProgressAnimation"
 					_isTransactionBtn = true
 					_focusIndex = 3
 					_label = 'IDS_BATTLEPASS_STATUS_BUTTON_BOOST'
-					_methods = "[	{	type: 'inputMapping.onAction', name: 'BattlePassProxyUSS.previewBattlePassLevels', args: { levelsToPreview: 1 }},
-									{	type: 'inputMapping.onRequest', name: 'purchaseBattlePassLevels', args: {}}]"
+					_methods = "[
+						{
+							type: 'inputMapping.onAction',
+							name: 'BattlePassProxyUSS.previewBattlePassLevels',
+							args: { levelsToPreview: 1 }
+						},
+						{
+							type: 'inputMapping.onRequest',
+							name: 'purchaseBattlePassLevels',
+							args: {}
+						}
+					]"
 				)
-			)
-
-			(controller $Tooltip
-				(bind enabled "isLastLevel")
-				(renderer = 'SimpleStatusTooltip')
-				(args
-					_text = 'IDS_BATTLEPASS_STATUS_BUTTON_BOOST_TOOLTIP'
-				)
-				(macro DEFAULT_TOOLTIP_BEHAVIOUR)
 			)
 		)
 
 		(block
 			(dispatch evForceScrollToIndex dir="EventDirection.DOWN" (event "evTakeRewardsButtonClicked"))
-			(dispatch evTakeRewardClicked dir="EventDirection.DOWN" delay=0.5 (event "evForceScrollToIndex"))
+			(dispatch evTakeRewardClicked dir="EventDirection.DOWN" delay=0.5 (event "evForceScrollToIndex") (event "battlePassComponent.evStartRewardClaimAnimation"))
 			(dispatch evOpenModal delay="REWARD_PROGRESS_ANIMATION_TIME" (event "evTakeRewardClicked"))
-			(bindcall externalCall "'inputMapping.onRequest'" "['openRewardsModalWithoutAnimation', {	rewardsEntityId: claimRewardsStackId,
-																										header: 'IDS_RECEIVED_LOOTBOXES_REWARDS' }]" watch=false (event "evOpenModal"))
-
+			(bindcall externalCall
+				"'inputMapping.onRequest'"
+				"['openRewardsModalWithoutAnimation', {	rewardsEntityId: claimRewardsStackId, header: 'IDS_RECEIVED_LOOTBOXES_REWARDS' }]"
+				watch=false
+				(event "evOpenModal")
+			)
 			(element DefaultButton
-				_name='take_rewards'
+				_focusIndex = 0
+				_name = 'battlepass_main_mw_take_rewards'
+				_defaultFocused = true
+				_isTransactionBtn = true
 				_width = "btnWidth"
 				_size = "btnSize"
 				_enabled = "hasReward"
-				_dispatchedEv = 'evTakeRewardsButtonClicked'
-				_defaultFocused = true
-				_focusIndex = 0
-				_isTransactionBtn = true
 				_label = 'IDS_BATTLEPASS_STATUS_BUTTON_CLAIM_REWARDS'
-				_methods = "[	{	type: 'inputMapping.onAction',
-									name: 'BattlePassProxyUSS.claimAllRewards',
-									args: { battlePassId: bpId }}]"
+				_dispatchedEv = "isClaimRequestEnabled ? '' : 'evTakeRewardsButtonClicked'"
+				_methods = "[
+					{
+						type: isClaimRequestEnabled ? 'inputMapping.onRequest' : '',
+						name: 'rewardsClaimConfirm',
+						args: { }
+					},
+					{
+						type: isClaimRequestEnabled ? '' : 'inputMapping.onAction',
+						name: 'BattlePassProxyUSS.claimAllRewards',
+						args: { battlePassId: bpId }
+					}
+				]"
 			)
 
 			(controller $Tooltip
@@ -399,7 +383,100 @@
 			(bind bottom "bpInfoPosition")
 		)
 		(element BattlePassRewardInfo
-			_rewardEntityId = "observableReward"
+			_battlePassRewardEntityId = "observableReward"
+		)
+	)
+)
+
+(def element BattlePassUpgradeButton (	_btnSize:number,
+										_btnText:str,
+										_btnName:str,
+										_isBattlePassPaidEnhanced:bool)
+	(scope
+		(struct mouseHandler = MOUSE_HANDLER())
+	)
+	(style
+		(align = "middle")
+		(flow = "horizontal")
+	)
+
+	(block
+		(bind visible "!_isBattlePassPaidEnhanced")
+		(style
+			(hitTest = false)
+			(position = "absolute")
+			(top = -80px)
+			(left = -80px)
+			(width = 250px)
+			(height = 250px)
+			(backgroundSize = "cover")
+			(bind backgroundImage "_isBattlePassPaidEnhanced	? ''
+																: 'url:../animations/spine/rewards/reward_states/available.skel'")
+		)
+		(controller $Spine)
+	)
+
+	(block
+		(bind visible "!_isBattlePassPaidEnhanced")
+		(style
+			(hitTest = false)
+			(width = 80px)
+			(height = 80px)
+			(marginRight = -20px)
+			(backgroundImage = 'url:../sse/battlepass/types/small/paid_enhanced.png')
+			(backgroundSize = "cover")
+			(zindex = 1)
+		)
+	)
+
+	(block
+		(style (zindex = 0))
+		(block
+			(class $FullsizeAbsolute)
+			(style
+				(hitTest = false)
+				(backgroundSize = "cover")
+				(bind backgroundImage "_isBattlePassPaidEnhanced	? ''
+																	: BP_SPINE_PATH + 'button_purchase/glow.skel'")
+			)
+			(controller $Spine)
+		)
+
+		(element DefaultButton
+			_name = "_btnName"
+			_label = "_btnText"
+			_width = "_btnSize == SIZE.LARGE ? 220px : 180px"
+			_size = "_btnSize"
+			_focusIndex = 1
+			_type = "SC.Ui_styles.BUTTON_TYPE.SECONDARY"
+			_isTransactionBtn = true
+			_externalRollover = "mouseHandler.rollOver"
+			_externalMouseDown = "mouseHandler.mouseDown"
+		)
+	)
+
+	(block
+		(class $FullsizeAbsolute)
+		(element MOUSE_HANDLER_CONTAINER
+			(macro STRUCT_MOUSE_DISPATCHER
+				_mouseHandler = "mouseHandler"
+			)
+
+			(macro STRUCT_SOUND_HANDLER
+				_mouseHandler = "mouseHandler"
+				_soundSet = "'button_secondary'"
+			)
+
+			(macro STRUCT_CLICK_HANDLER
+				_mouseHandler = "mouseHandler"
+				_methods = "[
+					{
+						type: 'inputMapping.onRequest',
+						name: 'purchaseBattlePass',
+						args: {}
+					}
+				]"
+			)
 		)
 	)
 )
@@ -409,15 +486,13 @@
 		(event evCarouselScrollValueChanged)
 		(event evCarouselBoundsChanged)
 
-		(macro STAGE_SIZE)
-		(struct levelDimensions = BP_LEVEL_SIZE(_stageWidth = "stageWidth"))
+		(struct stageSize = STAGE_SIZE())
+		(struct levelDimensions = BP_LEVEL_SIZE(_stageWidth = "stageSize.width"))
 
-		(var battlePassEntity:dhEntity = "getSingleEntity(CC.battlePass)")
-		(var battlePassComponent:dhComponent = "battlePassEntity.battlePass")
+		(var battlePassComponent:dhComponent = "getSingleComponent(CC.battlePass)")
 		(var bpType:number = "battlePassComponent.type" (event "battlePassComponent.evChanged"))
 		(var observableSpecialLevel:number = "battlePassComponent.observableSpecialLevel ?: 0" (event "battlePassComponent.evObservableSpecialLevelChanged"))
 		(var isBattlePassFree:bool = "bpType == SC.Common.BATTLEPASS_TYPES.FREE")
-		(var carouselBg:str = "isBattlePassFree ? 'url:../sse/battlepass/bg/carousel_free.png' : 'url:../sse/battlepass/bg/carousel_paid.png'")
 
 		(var scrollPosition:number = 0)
 		(var carouselWidth:number = 0)
@@ -433,35 +508,36 @@
 	(block
 		(style
 			(position = "absolute")
-			(bottom = 0)
+			(bottom = 0px)
 			(width = 100%)
 			(scale9grid = 2)
-			(bind height "levelDimensions.levelSize")
-			(bind backgroundImage "carouselBg")
+			(bind height "levelDimensions.size")
+			(bind backgroundImage "isBattlePassFree	? 'url:../sse/battlepass/bg/carousel_free.png'
+													: 'url:../sse/battlepass/bg/carousel_paid.png'")
 		)
 	)
 
 	(block
 		(style
 			(position = "absolute")
-			(bottom = 0)
+			(bottom = 0px)
 			(width = 55px)
 			(scale9grid = 4)
 			(backgroundImage = 'url:../sse/battlepass/carousel_shadow_left.png')
-			(bind left "levelDimensions.levelSize")
-			(bind height "levelDimensions.levelHeight")
+			(bind left "levelDimensions.size")
+			(bind height "levelDimensions.height")
 		)
 	)
 
 	(block
 		(style
 			(position = "absolute")
-			(bottom = 0)
+			(bottom = 0px)
 			(width = 55px)
 			(scale9grid = 4)
 			(backgroundImage = 'url:../sse/battlepass/carousel_shadow_right.png')
-			(bind right "levelDimensions.levelSize")
-			(bind height "levelDimensions.levelHeight")
+			(bind right "levelDimensions.size")
+			(bind height "levelDimensions.height")
 		)
 	)
 
@@ -469,9 +545,7 @@
 		_type = "bpType"
 	)
 
-	(element BattlePassProgressWithRewards
-		_carouselWidth = "carouselWidth"
-	)
+	(element BattlePassProgressWithRewards)
 
 	(element BattlePassLevelFixed
 		_entityId = "observableSpecialLevel"
@@ -483,16 +557,11 @@
 
 (def element BattlePassStatus (_isBattlePassFree:bool = true)
 	(scope
-		(var battlePassCurrentLevelEntity:dhEntity = "getSingleEntity(CC.battlePassCurrentLevel)")
-		(var previousLevelEntityId:number = "battlePassCurrentLevelEntity.battlePassLevel.previousLevelEntityId" (event "battlePassCurrentLevelEntity.battlePassLevel.evChanged"))
-		(var countCompleted:number = "battlePassCurrentLevelEntity.battlePassPostProgressionLevel.countCompleted" (event "battlePassCurrentLevelEntity.battlePassPostProgressionLevel.evChanged"))
+		(struct battlePassCurrentLevel = PULL_BATTLEPASS_CURRENT_LEVEL())
 
-		(var previousLevelEntity:gfx = "$datahub.getEntity(previousLevelEntityId)")
+		(var previousLevelEntity:dhEntity = "getEntity(battlePassCurrentLevel.previousLevelEntityId)")
 		(var completedLevel:number = "previousLevelEntity.battlePassLevel.level" (event "previousLevelEntity.battlePassLevel.evChanged"))
-		(var level:number = "countCompleted ? (completedLevel + countCompleted) : completedLevel")
-
-		(var text:str = "_isBattlePassFree	? subst('IDS_SUBST_BATTLEPASS_FREE_TOOLTIP_TEXT', [], {_level: level})
-											: subst('IDS_SUBST_BATTLEPASS_PAID_TOOLTIP_TEXT', [], {_level: level})")
+		(var level:number = "battlePassCurrentLevel.countCompleted ? (completedLevel + battlePassCurrentLevel.countCompleted) : completedLevel")
 	)
 
 	(tf
@@ -505,48 +574,25 @@
 	(controller $Tooltip
 		(renderer = 'SimpleStatusTooltip')
 		(args
-			_text = "text"
+			_text = "_isBattlePassFree	? subst('IDS_SUBST_BATTLEPASS_FREE_TOOLTIP_TEXT', [], {_level: level})
+										: subst('IDS_SUBST_BATTLEPASS_PAID_TOOLTIP_TEXT', [], {_level: level})"
 		)
 		(macro DEFAULT_TOOLTIP_BEHAVIOUR)
 	)
 )
 
-(def element DividedCounterWithIconBP (_curValue:number = 0, _maxValue:number = 0)
-	(style (flow = "horizontal"))
-
-	(element DefaultDividedCounter
-		_curValueTextClass = '$TextDefaultBold20NM'
-		_curValue = "_curValue"
-		_maxValue = "_maxValue"
-		_doNotAlphaOnZeroCurValue = true
-	)
-
-	(block
-		(style
-			(width = 24px)
-			(height = 24px)
-			(marginLeft = "S")
-			(marginTop = -7px)
-			(backgroundImage = 'url:../service_kit/currencies/icon_bpPoints.png')
-		)
-	)
-)
-
 (def element BattlePassTypes (_type:number)
 	(scope
-		(macro MOUSE_HANDLER_SCOPE)
+		(struct mouseHandler = MOUSE_HANDLER())
 
-		(macro STAGE_SIZE)
+		(struct stageSize = STAGE_SIZE())
+		(struct levelDimensions = BP_LEVEL_SIZE(_stageWidth = "stageSize.width"))
 
-		(struct levelDimensions = BP_LEVEL_SIZE(_stageWidth = "stageWidth"))
-		(var isBattlePassPaid:bool = "_type == SC.Common.BATTLEPASS_TYPES.PAID_REGULAR")
 		(var isBattlePassPaidEnhanced:bool = "_type == SC.Common.BATTLEPASS_TYPES.PAID_ENHANCED")
-		(var paidType:number = "isBattlePassPaidEnhanced ? SC.Common.BATTLEPASS_TYPES.PAID_ENHANCED : SC.Common.BATTLEPASS_TYPES.PAID_REGULAR")
-		(var bpPaidIcon:str = "isBattlePassPaidEnhanced ? 'url:../sse/battlepass/types/small/paid_enhanced.png' : 'url:../sse/battlepass/types/small/paid_regular.png'")
-		(var iconSize:number = "stageWidth < 1400 ? 80 : 112")
-		(var iconMargin:number = "(levelDimensions.levelSize - iconSize) / 2")
+		(var iconSize:number = "stageSize.width < 1400 ? 80 : 112")
+		(var iconMargin:number = "(levelDimensions.size - iconSize) / 2")
 	)
-	(style (bind width "levelDimensions.levelSize"))
+	(style (bind width "levelDimensions.size"))
 
 	(element AnimatedProgressBar
 		_startProgress = 0
@@ -560,7 +606,7 @@
 		(style
 			(align = "center")
 			(width = 100%)
-			(bind height "levelDimensions.levelSize")
+			(bind height "levelDimensions.size")
 		)
 
 		(block
@@ -607,7 +653,7 @@
 		(style
 			(align = "center")
 			(width = 100%)
-			(bind height "levelDimensions.levelSize")
+			(bind height "levelDimensions.size")
 		)
 
 		(block
@@ -622,27 +668,47 @@
 			(name = 'premium_battlepass')
 			(style
 				(backgroundSize = "cover")
-				(bind backgroundImage "bpPaidIcon")
 				(bind width "iconSize")
 				(bind height "iconSize")
 				(bind marginTop "iconMargin")
+				(bind backgroundImage "isBattlePassPaidEnhanced	? 'url:../sse/battlepass/types/small/paid_enhanced.png'
+																: 'url:../sse/battlepass/types/small/paid_regular.png'")
 			)
 		)
 
 		(controller $Tooltip
 			(renderer='BattlePassTypeTooltip')
 			(args
-				_type = "paidType"
-				_isReceived = "isBattlePassPaid || isBattlePassPaidEnhanced"
+				_isReceived = "_type in SC.Common.BATTLEPASS_TYPES.PAID"
+				_type = "isBattlePassPaidEnhanced	? SC.Common.BATTLEPASS_TYPES.PAID_ENHANCED
+													: SC.Common.BATTLEPASS_TYPES.PAID_REGULAR"
 			)
 			(macro DEFAULT_TOOLTIP_BEHAVIOUR)
 		)
 
-		(macro MOUSE_HANDLER
-			_soundSet = "'default_button'"
-			_methods = "[	{	type: 'inputMapping.onRequest',
-								name: 'purchaseBattlePass',
-								args: {}}]"
+		(block
+			(class $FullsizeAbsolute)
+			(element MOUSE_HANDLER_CONTAINER
+				(macro STRUCT_MOUSE_DISPATCHER
+					_mouseHandler = "mouseHandler"
+				)
+
+				(macro STRUCT_SOUND_HANDLER
+					_mouseHandler = "mouseHandler"
+					_soundSet = "'default_button'"
+				)
+
+				(macro STRUCT_CLICK_HANDLER
+					_mouseHandler = "mouseHandler"
+					_methods = "[
+						{
+							type: 'inputMapping.onRequest',
+							name: 'purchaseBattlePass',
+							args: {}
+						}
+					]"
+				)
+			)
 		)
 	)
 )
@@ -651,30 +717,29 @@
 	(scope
 		(var isBattlePassFree:bool = "_type == SC.Common.BATTLEPASS_TYPES.FREE")
 		(var isBattlePassPaid:bool = "isIn(_type, SC.Common.BATTLEPASS_TYPES.PAID)")
-		(var title:str = "'IDS_BATTLEPASS_TYPE_' + SC.Common.BATTLEPASS_TYPES.VALUE_TO_NAME[_type]")
-		(var unifiedStatus:str = "_isReceived ? SC.Ui_styles.UNIFIED_STATUS.CHECK : SC.Ui_styles.UNIFIED_STATUS.LOCK")
-		(var statusText:str = "'IDS_BATTLEPASS_TYPE_TOOLTIP_STATUS_' + (_isReceived ? 'RECEIVED' : 'LOCKED')")
 		(var postfixText:str = "isBattlePassPaid && _isReceived ? '_RECEIVED' : ''")
-		(var description:str = "'IDS_BATTLEPASS_TYPE_TOOLTIP_DESCRIPTION_' + SC.Common.BATTLEPASS_TYPES.VALUE_TO_NAME[_type] + postfixText")
 	)
-	(bind name "'bp_type_' + (isBattlePassFree ? 'free':'paid')")
+	(bind name "isBattlePassFree ? 'bp_type_free' : 'bp_type_paid'")
+
 	(macro TOOLTIP_SYSTEM_DEFAULT_BACKGROUND)
 	(style (width = 340px))
 
 	(element TOOLTIP_SYSTEM_DEFAULT_CONTAINER
 		(element TooltipSystemHeaderSubheaderText
-			_headerText = "title"
+			_headerText = "'IDS_BATTLEPASS_TYPE_' + SC.Common.BATTLEPASS_TYPES.VALUE_TO_NAME[_type]"
 		)
 		(element TooltipSystemHorizontalDivider)
 
 		(element TooltipSystemStatusLine
-			_unifiedStatus = "unifiedStatus"
-			_text = "statusText"
+			_text = "_isReceived	? 'IDS_BATTLEPASS_TYPE_TOOLTIP_STATUS_RECEIVED'
+									: 'IDS_BATTLEPASS_TYPE_TOOLTIP_STATUS_LOCKED'"
+			_unifiedStatus = "_isReceived	? SC.Ui_styles.UNIFIED_STATUS.CHECK
+											: SC.Ui_styles.UNIFIED_STATUS.LOCK"
 		)
 		(element TooltipSystemHorizontalDivider)
 
 		(element TooltipSystemDescriptionText
-			_descriptionText = "description"
+			_descriptionText = "'IDS_BATTLEPASS_TYPE_TOOLTIP_DESCRIPTION_' + SC.Common.BATTLEPASS_TYPES.VALUE_TO_NAME[_type] + postfixText"
 		)
 		(block
 			(style (width = 100%))
@@ -696,23 +761,23 @@
 	)
 )
 
-(def element BattlePassProgressWithRewards (_carouselWidth:number)
+(def element BattlePassProgressWithRewards ()
 	(scope
 		(event evScrollToIndex)
 		(event evForceScrollToIndex)
 
-		(macro STAGE_SIZE)
+		(struct stageSize = STAGE_SIZE())
+		(struct levelDimensions = BP_LEVEL_SIZE(_stageWidth = "stageSize.width"))
 
-		(struct levelDimensions = BP_LEVEL_SIZE(_stageWidth = "stageWidth"))
+		(struct battlePassCurrentLevel = PULL_BATTLEPASS_CURRENT_LEVEL())
 
-		(var battlePassCurrentLevelEntity:dhEntity = "getSingleEntity(CC.battlePassCurrentLevel)")
-		(var currentLevel:number = "battlePassCurrentLevelEntity.battlePassLevel.level ?: 1" (event "battlePassCurrentLevelEntity.battlePassLevel.evChanged"))
+		(struct activeTip = PULL_GUIDING_TIP(_type = "SC.Context_guiding_tip.TIP_TYPE.BATTLEPASS_MULTIPLE_REWARD"))
+		(var targetRewardLevel:number = "getEntity(toNumber(activeTip.targetId)).battlePassReward.level ?: 0")
 
 		(var mainProgressionCollection:dhCollection = "getCollectionByPath(CC.battlePassLevel, 'mainProgression')")
 		(var mainProgressionLen:number = "mainProgressionCollection.length ?: 0")
 
-		(var battlePassEntity:dhEntity = "getSingleEntity(CC.battlePass)")
-		(var battlePassComponent:dhComponent = "battlePassEntity.battlePass")
+		(var battlePassComponent:dhComponent = "getSingleComponent(CC.battlePass)")
 		(var type:number =				"battlePassComponent.type"				(event "battlePassComponent.evChanged"))
 		(var totalPoints:number =		"battlePassComponent.totalPoints"		(event "battlePassComponent.evChanged"))
 		(var maxTotalPoints:number =	"battlePassComponent.maxTotalPoints"	(event "battlePassComponent.evChanged"))
@@ -721,23 +786,29 @@
 		(var isBattlePassFree:bool = "type == SC.Common.BATTLEPASS_TYPES.FREE")
 
 		
-		(var currentLevelIndexToScrollTo:number = "max(1, min(mainProgressionLen, currentLevel - BP_LEVELS_TO_SHOW_BEFORE_CURRENT_LEVEL)) - 1")
+		(var currentLevelIndexToScrollTo:number = "max(1, min(mainProgressionLen, (targetRewardLevel ?: battlePassCurrentLevel.level) - BP_LEVELS_TO_SHOW_BEFORE_CURRENT_LEVEL)) - 1")
 
-		(var progressBarWidth:number = "mainProgressionLen * levelDimensions.levelSize + 1")
+		(var progressBarWidth:number = "mainProgressionLen * levelDimensions.size + 1")
 	)
-
 	
-	(dispatch evScrollToIndex args="{value: currentLevelIndexToScrollTo}" delay=0.1 on='addedToStage' (bind trigger "totalPoints") (event "evForceScrollToIndex"))
+	(dispatch
+		evScrollToIndex
+		args="{value: currentLevelIndexToScrollTo}"
+		delay=0.1
+		on='addedToStage'
+		(bind trigger "totalPoints")
+		(event "evForceScrollToIndex")
+		(event "battlePassComponent.evStartRewardClaimAnimation")
+	)
 	(dispatch 'evCarouselBoundsChanged' dir="EventDirection.UP" args="{bounds: $globalLayoutBounds}" (event "$evLayoutBoundsChanged"))
 	(bindcall externalCall 'sound.playSetSoundDirect' "['battlepass_progressbar', 'start']" (bind trigger "progress"))
 
 	(class $Fullsize)
-
 	(scrollArea
 		(class $Fullsize)
 
 		(macro DEFAULT_HORIZONTAL_SCROLL_PARAMS
-			_singleStep = "levelDimensions.levelSize"
+			_singleStep = "levelDimensions.size"
 			_wheelScrollSpeed = "0.7"
 			_wheelScrollAcceleration = "0.8"
 			_valueChangedEvent = "'evCarouselScrollValueChanged'"
@@ -753,9 +824,9 @@
 				(name = 'battlepass_levels')
 				(style
 					(marginLeft = -1px)
-					(bind width "progressBarWidth")
 					(paddingLeft = 1px)
 					(paddingRight = 1px)
+					(bind width "progressBarWidth")
 				)
 
 				(element AnimatedProgressBar
@@ -767,17 +838,16 @@
 			)
 
 			(hblock
-				(style (bind height "levelDimensions.levelHeight"))
+				(style (bind height "levelDimensions.height"))
 
 				(controller $DynamicRepeat renderer='BattlePassLevelCard' name='battlePassLevelCard'
 					(bind count "mainProgressionLen")
 					(args
 						_battlePassLevelEntity = "mainProgressionCollection.getEntityAtIndex($index)"
-						_currentLevel = "currentLevel"
 						_isBattlePassFree = "isBattlePassFree"
 					)
-					(bind itemOffset "levelDimensions.levelSize")
-					(bind itemWidth "levelDimensions.levelSize")
+					(bind itemOffset "levelDimensions.size")
+					(bind itemWidth "levelDimensions.size")
 				)
 			)
 		)
@@ -785,38 +855,45 @@
 	)
 )
 
-(def element BattlePassLevelCard (_battlePassLevelEntity:dhEntity, _currentLevel:number, _isBattlePassFree:bool)
+(def element BattlePassLevelCard (_battlePassLevelEntity:dhEntity, _isBattlePassFree:bool)
 	(scope
 		(event evTakeRewardClicked)
 		(event evRewardFreeAnimationStart)
 		(event evRewardPaidAnimationStart)
 
-		(var level:number =			"_battlePassLevelEntity.battlePassLevel.level")
-		(var isSpecialLevel:bool =	"_battlePassLevelEntity.battlePassLevel.isSpecialLevel")
-		(var isLastReceivedLevel:bool = "level == _currentLevel-1")
+		(var battlePass:dhComponent = "getSingleComponent(CC.battlePass)")
+		(var totalPoints:number = "battlePass.totalPoints" (event "battlePass.evChanged"))
+
+		(var level:number = "_battlePassLevelEntity.battlePassLevel.level")
+		(var isSpecialLevel:bool = "_battlePassLevelEntity.battlePassLevel.isSpecialLevel")
+		(var pointsPerLevel:number = "_battlePassLevelEntity.battlePassLevel.pointsPerLevel")
+
+		(var isTargetLevel:bool = "level == floor(totalPoints/pointsPerLevel)")
 
 		(var freeRewardsCollection:dhCollection = "getCollectionByPath(CC.battlePassReward, 'byLevelAndRewardType.' + level + '_' + SC.Common.BATTLEPASS_REWARD_TYPES.FREE)")
-		(var freeRewardEntity:dhEntity = "freeRewardsCollection.getEntityAtIndex(0)")
-		
 		(var paidRewardsCollection:dhCollection = "getCollectionByPath(CC.battlePassReward, 'byLevelAndRewardType.' + level + '_' + SC.Common.BATTLEPASS_REWARD_TYPES.PAID)")
-		(var paidRewardEntity:dhEntity = "paidRewardsCollection.getEntityAtIndex(0)")
-
-		(var freeRewardState:number = "freeRewardEntity.battlePassReward.rewardState" (event "freeRewardEntity.battlePassReward.evRewardStateChanged"))
-		(var isFreeRewardReceived:bool = "freeRewardState == SC.Common.BATTLEPASS_REWARD_STATE.CLAIMED")
-
-		(var paidRewardState:number = "paidRewardEntity.battlePassReward.rewardState" (event "paidRewardEntity.battlePassReward.evRewardStateChanged"))
-		(var isPaidRewardReceived:bool = "paidRewardState == SC.Common.BATTLEPASS_REWARD_STATE.CLAIMED")
 	)
 
-	(dispatch evRewardFreeAnimationStart init=true (event "evTakeRewardClicked") (bind enabled "_isBattlePassFree && isLastReceivedLevel && isFreeRewardReceived"))
-	(dispatch evRewardPaidAnimationStart init=true (event "evTakeRewardClicked") (bind enabled "!_isBattlePassFree && isLastReceivedLevel && isPaidRewardReceived"))
+	(dispatch
+		evRewardFreeAnimationStart
+		init=true
+		(event "evTakeRewardClicked")
+		(bind enabled "_isBattlePassFree && isTargetLevel")
+	)
+
+	(dispatch
+		evRewardPaidAnimationStart
+		init=true
+		(event "evTakeRewardClicked")
+		(bind enabled "!_isBattlePassFree && isTargetLevel")
+	)
 
 	(block
 		(class $FullsizeAbsolute)
 		(style
 			(backgroundSize = "cover")
-			(bind backgroundImage "isSpecialLevel	?	_isBattlePassFree	? 'url:../animations/spine/battlepass/bp_level_special/type_free.skel'
-																			: 'url:../animations/spine/battlepass/bp_level_special/type_paid.skel'
+			(bind backgroundImage "isSpecialLevel	?	_isBattlePassFree	? BP_SPINE_PATH + 'bp_level_special/type_free.skel'
+																			: BP_SPINE_PATH + 'bp_level_special/type_paid.skel'
 													:	''")
 		)
 		(controller $Spine
@@ -854,9 +931,8 @@
 		(block
 			(class $BPCarouselVertRightBorder)
 		)
-
 		(element BattlePassRewardRenderer
-			_battlePassRewardEntity = "freeRewardEntity"
+			_collection = "freeRewardsCollection"
 			_isSpecialLevel = "isSpecialLevel"
 		)
 	)
@@ -885,7 +961,7 @@
 		)
 
 		(element BattlePassRewardRenderer
-			_battlePassRewardEntity = "paidRewardEntity"
+			_collection = "paidRewardsCollection"
 			_isSpecialLevel = "isSpecialLevel"
 		)
 	)
@@ -895,7 +971,7 @@
 		(style
 			(position = "absolute")
 			(top = "-BP_PROGRESSBAR_HEIGHT")
-			(right = 0)
+			(right = 0px)
 			(width = 1px)
 			(height = "BP_PROGRESSBAR_HEIGHT")
 			(backgroundColor = 0xCC535555)
@@ -906,48 +982,43 @@
 (def element BattlePassLevelFixed (_entityId:number, _isBattlePassFree:bool, _carouselWidth:number=0, _scrollPosition:number=0)
 	(scope
 		(macro HIGH_CONTRAST_DATA_SCOPE)
-		(macro STAGE_SIZE)
 
-		(struct levelDimensions = BP_LEVEL_SIZE(_stageWidth = "stageWidth"))
+		(struct stageSize = STAGE_SIZE())
+		(struct levelDimensions = BP_LEVEL_SIZE(_stageWidth = "stageSize.width"))
 
 		(var battlePassLevelEntity:dhEntity = "getEntity(_entityId)")
-		(var battlePassLevelComponent:dhComponent = "battlePassLevelEntity.battlePassLevel")
-		(var level:number =				"battlePassLevelComponent.level ?: 1"			(event "battlePassLevelComponent.evChanged"))
-		(var currentPoints:number =		"battlePassLevelComponent.points ?: 0"			(event "battlePassLevelComponent.evChanged"))
-		(var previousPoints:number =	"battlePassLevelComponent.previousPoints ?: 0"	(event "battlePassLevelComponent.evChanged"))
-		(var pointsPerLevel:number =	"battlePassLevelComponent.pointsPerLevel ?: 1"	(event "battlePassLevelComponent.evChanged"))
-		(var previousProgress:number = "100% * previousPoints/pointsPerLevel")
-		(var progress:number = "100% * currentPoints/pointsPerLevel")
+		(struct battlePassLevel = PULL_BATTLEPASS_LEVEL_INFO(_entity="battlePassLevelEntity"))
 
-		(var isPostProgression:bool = "!!battlePassLevelEntity.battlePassPostProgressionLevel")
+		(var freeRewardsCollection:dhCollection = "getCollectionByPath(CC.battlePassReward, 'byLevelAndRewardType.' + battlePassLevel.level + '_' + SC.Common.BATTLEPASS_REWARD_TYPES.FREE)")
+		(var paidRewardsCollection:dhCollection = "getCollectionByPath(CC.battlePassReward, 'byLevelAndRewardType.' + battlePassLevel.level + '_' + SC.Common.BATTLEPASS_REWARD_TYPES.PAID)")
 
-		(var freeRewardsCollection:dhCollection = "getCollection(CC.battlePassReward).getChildByPath('byLevelAndRewardType.' + level + '_' + SC.Common.BATTLEPASS_REWARD_TYPES.FREE)")
-		(var freeRewardEntity:dhEntity = "freeRewardsCollection.getEntityAtIndex(0)")
+		(var isPostProgression:bool = "toBool(battlePassLevelEntity.battlePassPostProgressionLevel)")
 
-		(var paidRewardsCollection:dhCollection = "getCollection(CC.battlePassReward).getChildByPath('byLevelAndRewardType.' + level + '_' + SC.Common.BATTLEPASS_REWARD_TYPES.PAID)")
-		(var paidRewardEntity:dhEntity = "paidRewardsCollection.getEntityAtIndex(0)")
-
-		(var textLevel:str = "isPostProgression ? 'IDS_BATTLEPASS_STATUS_LEVEL_POST_PROGRESS' : toString(level)")
-
-		(var mid:number = "(_carouselWidth + _scrollPosition) / levelDimensions.levelSize")
+		(var mid:number = "(_carouselWidth + _scrollPosition) / levelDimensions.size")
 		(var minLevelToObserve:number = "round(mid)")
 	)
 
-	(bindcall externalCall "'inputMapping.onAction'" "['BattlePassProxyUSS.updateObservableSpecialLevel', {minLevelToObserve: minLevelToObserve}]" init=true watch=false (bind trigger "minLevelToObserve"))
+	(bindcall externalCall
+		"'inputMapping.onAction'"
+		"['BattlePassProxyUSS.updateObservableSpecialLevel', {minLevelToObserve: minLevelToObserve}]"
+		init=true
+		watch=false
+		(bind trigger "minLevelToObserve")
+	)
 
 	(block
 		(class $FullsizeAbsolute)
 		(style
 			(backgroundSize = "cover")
-			(bind backgroundImage "_isBattlePassFree	? 'url:../animations/spine/battlepass/bp_level_special/type_free.skel'
-														: 'url:../animations/spine/battlepass/bp_level_special/type_paid.skel'")
+			(bind backgroundImage "_isBattlePassFree	? BP_SPINE_PATH + 'bp_level_special/type_free.skel'
+														: BP_SPINE_PATH + 'bp_level_special/type_paid.skel'")
 		)
 		(controller $Spine)
 	)
 
 	
 	(block
-		(macro SPECIAL_LEVEL_ELEMENTS_APPEAR_ANIMATION "level" 0)
+		(macro SPECIAL_LEVEL_ELEMENTS_APPEAR_ANIMATION "battlePassLevel.level" 0)
 		(class $MiddleAlignedAbsolutely)
 		(style (top = "-BP_PROGRESSBAR_NUMBERS_OFFSET"))
 
@@ -956,7 +1027,7 @@
 				(name = 'important_level')
 				(bind class "isPostProgression ?  '$TextDefault18NM' : '$TextDefaultBold18NM'")
 				(style (alpha = "TA"))
-				(bind text "textLevel")
+				(bind text "isPostProgression ? 'IDS_BATTLEPASS_STATUS_LEVEL_POST_PROGRESS' : battlePassLevel.level")
 			)
 
 			(block
@@ -980,14 +1051,14 @@
 	(block
 		(style
 			(position = "absolute")
-			(right = 0)
+			(right = 0px)
 			(top = "-BP_PROGRESSBAR_HEIGHT")
-			(bind width "levelDimensions.levelSize")
+			(bind width "levelDimensions.size")
 		)
 
 		(element AnimatedProgressBar
-			_startProgress = "previousProgress"
-			_progress = "progress"
+			_startProgress = "battlePassLevel.previousProgress"
+			_progress = "battlePassLevel.progress"
 			_size = "SIZE.MEDIUM"
 			_isRounded = false
 		)
@@ -995,11 +1066,10 @@
 
 	
 	(block
-		(macro SPECIAL_LEVEL_ELEMENTS_APPEAR_ANIMATION "level" 0)
+		(macro SPECIAL_LEVEL_ELEMENTS_APPEAR_ANIMATION "battlePassLevel.level" 0)
 
 		(element BattlePassRewardRenderer
-			_battlePassRewardEntity = "freeRewardEntity"
-			_isSpecialLevel = true
+			_collection = "freeRewardsCollection"
 			_isLevelFixed = true
 		)
 
@@ -1014,7 +1084,7 @@
 
 	
 	(block
-		(macro SPECIAL_LEVEL_ELEMENTS_APPEAR_ANIMATION "level" 0)
+		(macro SPECIAL_LEVEL_ELEMENTS_APPEAR_ANIMATION "battlePassLevel.level" 0)
 
 		(block
 			(class $FullsizeAbsolute)
@@ -1038,8 +1108,7 @@
 		)
 
 		(element BattlePassRewardRenderer
-			_battlePassRewardEntity = "paidRewardEntity"
-			_isSpecialLevel = true
+			_collection = "paidRewardsCollection"
 			_isLevelFixed = true
 		)
 	)
@@ -1047,7 +1116,7 @@
 
 (def element PostprogressInfoTooltip ()
 	(macro TOOLTIP_SYSTEM_DEFAULT_BACKGROUND)
-	(style (width = 340px) (hitTest = false))
+	(style(width = 340px))
 
 	(element TOOLTIP_SYSTEM_DEFAULT_CONTAINER
 		(element TooltipSystemHeaderSubheaderText
@@ -1061,126 +1130,83 @@
 	)
 )
 
-(def element BattlePassRewardRenderer (_battlePassRewardEntity:dhEntity, _isSpecialLevel:bool = false, _isLevelFixed:bool = false)
+(def element BattlePassRewardRenderer (	_collection:dhCollection, _isLevelFixed:bool = false)
 	(scope
-		(event evShowIconCheck)
+		(struct mouseHandler = MOUSE_HANDLER())
 
-		(macro STAGE_SIZE)
+		(struct stageSize = STAGE_SIZE())
+		(struct levelDimensions = BP_LEVEL_SIZE(_stageWidth = "stageSize.width"))
+		(struct animation = PULL_ANIMATION_SIZE(_scale = "levelDimensions.scale.value"))
 
-		(struct levelDimensions = BP_LEVEL_SIZE(_stageWidth = "stageWidth"))
+		(var battlePassComponent:dhComponent = "getSingleComponent(CC.battlePass)")
+		(var observableReward:number = "battlePassComponent.observableReward ?: 0" (event "battlePassComponent.evObservableRewardChanged"))
+		(var isFreeBpType:bool = "battlePassComponent.type == SC.Common.BATTLEPASS_TYPES.FREE" (event "battlePassComponent.evChanged"))
 
-		(var battlePassEntity:dhEntity = "getSingleEntity(CC.battlePass)")
-		(var battlePassComponent:dhComponent = "battlePassEntity.battlePass")
-		(var observableReward:number = "battlePassComponent.observableReward" (event "battlePassComponent.evObservableRewardChanged"))
-		(var bpType:number = "battlePassComponent.type" (event "battlePassComponent.evChanged"))
+		(struct rewardsInfo = PULL_BATTLEPASS_MULTIPLE_REWARD_STATE(_collection = "_collection"))
+		(struct rewardObservable = PULL_BATTLEPASS_REWARD_INFO(_entityId = "getEntity(observableReward).id"))
 
-		(var battlePassReward:dhComponent = "_battlePassRewardEntity.battlePassReward")
-		(var rewardState:number = "battlePassReward.rewardState" (event "battlePassReward.evRewardStateChanged"))
-		(var rewardId:number = "battlePassReward.rewardId")
-
-		(var rewardEntity:dhEntity = "getEntity(rewardId)")
-		(var reward:dict = "{	id:			rewardEntity.rewardComponent.id,
-								amount:		rewardEntity.rewardComponent.amount,
-								name:		rewardEntity.rewardComponent.name,
-								type:		rewardEntity.rewardComponent.type,
-								subtype:	rewardEntity.rewardComponent.subtype,
-								params:		rewardEntity.rewardComponent.params,
-								isPRMP:		rewardEntity.rewardComponent.isPRMP }")
-
-		(var isSelected:bool = "_battlePassRewardEntity.id == observableReward")
-		(var isReceived:bool = "rewardState == SC.Common.BATTLEPASS_REWARD_STATE.CLAIMED")
-		(var isAvailable:bool = "rewardState == SC.Common.BATTLEPASS_REWARD_STATE.AVAILABLE")
-		(var animationSize:number = "stageWidth < 1400 ? 200 : 250")
-		(var animationOffset:number = "stageWidth < 1400 ? -40 : -50")
-		(var selectedStateAnimation:str = "isSelected ? 'url:../animations/spine/battlepass/reward_states/selected.skel' : ''")
-		(var availableStateAnimation:str = "isAvailable ? 'url:../animations/spine/rewards/reward_states/available.skel' : ''")
-		(var isIconCheckEnabled:bool = "isReceived && !_isLevelFixed")
-
-		(macro MOUSE_HANDLER_SCOPE)
+		(var isMultipleReward:bool = "_collection.length > 1")
 	)
-	(dispatch evShowIconCheck (bind enabled "isIconCheckEnabled") (event "battlePassReward.evRewardStateChanged"))
+
+	(macro STRUCT_MOUSE_DISPATCHER
+		_mouseHandler = "mouseHandler"
+	)
+
+	(macro STRUCT_CLICK_HANDLER
+		_mouseHandler = "mouseHandler"
+		_methods = "[
+			{
+				type: isMultipleReward ? '' : 'inputMapping.onAction',
+				name: 'BattlePassProxyUSS.updateObservableReward',
+				args: { battlePassRewardEntityId: _collection.getEntityAtIndex(0).id }
+			}
+		]"
+	)
 
 	(style
-		(backgroundColor = "NO_COLOR")
-		(bind width "levelDimensions.levelSize")
-		(bind height "levelDimensions.levelSize")
 		(align = "center|middle")
+		(backgroundColor = "NO_COLOR")
+		(bind width "levelDimensions.size")
+		(bind height "levelDimensions.size")
 	)
-
 	(block
-		(bind visible "isSelected")
+		(bind visible "rewardsInfo.isAvailable")
 		(style
 			(hitTest = false)
-			(backgroundSize = "cover")
 			(position = "absolute")
-			(bind top "animationOffset")
-			(bind left "animationOffset")
-			(bind width "animationSize")
-			(bind height "animationSize")
-			(bind backgroundImage "selectedStateAnimation")
+			(backgroundSize = "cover")
+			(bind top "animation.offset")
+			(bind left "animation.offset")
+			(bind width "animation.size")
+			(bind height "animation.size")
+			(bind backgroundImage "rewardsInfo.isAvailable ? 'url:../animations/spine/rewards/reward_states/available.skel' : ''")
 		)
-		(controller $Spine (bind enabled "isSelected"))
+		(bind colorTransform "isFreeBpType ? CT_FREE_REWARD_AVAILABLE : CT_PAID_REWARD_AVAILABLE")
+		(controller $Spine
+			(bind enabled "rewardsInfo.isAvailable")
+		)
 	)
 
 	(block
-		(bind visible "isAvailable")
-		(style
-			(hitTest = false)
-			(backgroundSize = "cover")
-			(position = "absolute")
-			(bind top "animationOffset")
-			(bind left "animationOffset")
-			(bind width "animationSize")
-			(bind height "animationSize")
-			(bind backgroundImage "availableStateAnimation")
-		)
-		(controller $Spine  (bind enabled "isAvailable"))
-	)
-
-	(block
-		(element RewardItem
-			_reward = "reward"
-			_isUnavailable = "isReceived"
-			_isReceived = "isReceived && _isLevelFixed"
-			_isBattlePassSmallIconView = true
-		)
-
-		(block
-			(class $FullsizeAbsolute)
-			(style
-				(hitTest = false)
-				(align = "center|middle")
-			)
-			(bind visible "isIconCheckEnabled")
-
-			(block
-				(style
-					(width = 48px)
-					(height = 48px)
-					(pivotX = 50%)
-					(pivotY = 50%)
-					(backgroundImage = 'url:../reward_categories/icon_check.png')
-				)
-
-				(controller $Animation
-					(bindcall play  duration = 0.5
-									from = "{ visualScaleX: 2, visualScaleY: 2, alpha: 0 }"
-									to = "{ visualScaleX: 1, visualScaleY: 1, alpha: 1 }"
-									(event "evShowIconCheck")
-					)
-				)
+		(class $Fullsize)
+		(controller $Instance renderer='BattlePassRewardItem'
+			(bind enabled "!isMultipleReward")
+			(args
+				_battlePassRewardEntityId = "_collection.getEntityAtIndex(0).id"
+				_observableReward = "observableReward"
+				_isLevelFixed = "_isLevelFixed"
 			)
 		)
-	)
 
-	
-	
-	(macro MOUSE_EVENTS_DISPATCHER)
-	(macro SOUND_HANDLER "'button_battlepass_reward'")
-	(macro CLICK_HANDLER
-		_methods = "[{	type: 'inputMapping.onAction',
-						name: 'BattlePassProxyUSS.updateObservableReward',
-						args: { battlePassRewardEntityId: _battlePassRewardEntity.id } }]"
+		(controller $Instance renderer = 'MultipleReward'
+			(bind enabled "isMultipleReward")
+			(args
+				_collection = "_collection"
+				_observableReward = "observableReward"
+				_isLevelFixed = "_isLevelFixed"
+				_isFreeBpType = "isFreeBpType"
+			)
+		)
 	)
 )
 
@@ -1198,9 +1224,9 @@
 	
 	(style
 		(hitTest = false)
-		(backgroundSize = "cover")
-		(backgroundImage = 'url:../animations/spine/battlepass/progress/progress_free.skel')
 		(position = "absolute")
+		(backgroundSize = "cover")
+		(backgroundImage = "BP_SPINE_PATH + 'progress/progress_free.skel'")
 		(bind top "topOffset")
 		(bind left "leftOffset")
 		(bind width "animationWidth")
@@ -1223,9 +1249,9 @@
 
 	(style
 		(hitTest = false)
-		(backgroundSize = "cover")
-		(backgroundImage = 'url:../animations/spine/battlepass/progress/progress_paid.skel')
 		(position = "absolute")
+		(backgroundSize = "cover")
+		(backgroundImage = "BP_SPINE_PATH + 'progress/progress_paid.skel'")
 		(bind bottom "bottomOffset")
 		(bind left "leftOffset")
 		(bind width "animationWidth")
@@ -1234,74 +1260,159 @@
 	(controller $Spine)
 )
 
-(def element BattlePassRewardInfo (_rewardEntityId:number)
+(def element BattlePassRewardInfo (_battlePassRewardEntityId:number)
 	(scope
-		(event startShow)
+		(var battlePass:dhComponent = "getSingleComponent(CC.battlePass)")
 
-		(var battlePassEntity:dhEntity = "getSingleEntity(CC.battlePass)")
-		(var battlePassComponent:dhComponent = "battlePassEntity.battlePass")
-		(var battlePassType:number = "battlePassComponent.type " (event "battlePassComponent.evChanged"))
-		(var isBattlePassFree:bool = "battlePassType == SC.Common.BATTLEPASS_TYPES.FREE")
+		(struct battlePassType = PULL_BATTLEPASS_TYPE(_component="battlePass"))
+		(struct battlePassCurrentLevel = PULL_BATTLEPASS_CURRENT_LEVEL())
 
-		(var battlePassCurrentLevelEntity:dhEntity = "getSingleEntity(CC.battlePassCurrentLevel)")
-		(var currentLevel:number = "battlePassCurrentLevelEntity.battlePassLevel.level" (event "battlePassCurrentLevelEntity.battlePassLevel.evChanged"))
+		(struct battlePassReward = PULL_BATTLEPASS_REWARD_INFO(_entityId = "_battlePassRewardEntityId"))
+		(struct battlePassRewardState = PULL_BATTLEPASS_REWARD_STATE(_rewardState = "battlePassReward.rewardState"))
 
-		(var battlePassRewardEntity:dhEntity = "getEntity(_rewardEntityId)")
-		(var battlePassRewardComponent:dhComponent = "battlePassRewardEntity.battlePassReward")
-		(var rewardId:number =		"battlePassRewardComponent.rewardId")
-		(var rewardType:number =	"battlePassRewardComponent.type")
-		(var rewardState:number =	"battlePassRewardComponent.rewardState" (event "battlePassRewardComponent.evRewardStateChanged"))
-		(var level:number =			"battlePassRewardComponent.level")
+		(var battlePassLevelEntity:dhEntity = "getPrimaryEntity(CC.battlePassLevel, battlePassReward.level)")
+		(struct battlePassLevel = PULL_BATTLEPASS_LEVEL_INFO(_entity = "battlePassLevelEntity"))
 
-		(var isReceived:bool =		"rewardState == SC.Common.BATTLEPASS_REWARD_STATE.CLAIMED")
-		(var isUnavailable:bool =	"rewardState == SC.Common.BATTLEPASS_REWARD_STATE.UNAVAILABLE")
-		(var isPaidReward:bool =	"rewardType == SC.Common.BATTLEPASS_REWARD_TYPES.PAID")
+		(var rewardComponent:dhComponent = "getEntity(battlePassReward.rewardId).rewardComponent")
 
-		(var battlePassLevelEntity:dhEntity = "getPrimaryEntity(CC.battlePassLevel, level)")
-		(var battlePassLevelComponent:dhComponent = "battlePassLevelEntity.battlePassLevel")
-		(var selectedLevel:number = "battlePassLevelComponent.level"				(event "battlePassLevelComponent.evChanged"))
-		(var curPoints:number =		"battlePassLevelComponent.points ?: 0"				(event "battlePassLevelComponent.evChanged"))
-		(var maxPoints:number =		"battlePassLevelComponent.pointsPerLevel ?: 1"	(event "battlePassLevelComponent.evChanged"))
-		(var isLevelCompleted:bool = "curPoints == maxPoints")
-		(var isLevelInProgress:bool = "currentLevel == level")
-		(var isPaidRewardUnavailable:bool = "isBattlePassFree && isUnavailable")
-		(var isLevelLocked:bool = "isBattlePassFree	? (selectedLevel > currentLevel && !isPaidReward)
-													: selectedLevel > currentLevel")
-		(var isStatusBlockVisible:bool = "isReceived || isLevelLocked || (isPaidReward && isPaidRewardUnavailable)")
+		(var isMultipleReward:bool = "getCollectionByPath(CC.battlePassReward, 'byLevelAndRewardType.' + battlePassLevel.level + '_' + battlePassReward.type).length > 1")
+
+		(var isLevelCompleted:bool = "battlePassLevel.currentPoints == battlePassLevel.pointsPerLevel")
+		(var isLevelInProgress:bool = "battlePassCurrentLevel.level == battlePassReward.level")
+		(var isLevelLocked:bool = "battlePassType.isFree	? (battlePassLevel.level > battlePassCurrentLevel.level && !battlePassReward.isPaidTrack)
+															: battlePassLevel.level > battlePassCurrentLevel.level")
+		(var isPaidRewardUnavailable:bool = "battlePassType.isFree && battlePassRewardState.isUnavailable")
+		(var isStatusBlockVisible:bool = "	(battlePassReward.isPaidTrack && isPaidRewardUnavailable) ||
+											battlePassRewardState.isReceived || isLevelLocked")
 		(var isPointsCounterBlockVisible:bool = "!isLevelCompleted && isLevelInProgress && !isStatusBlockVisible")
-		(var unifiedStatus:str = "isReceived ? SC.Ui_styles.UNIFIED_STATUS.CHECK : SC.Ui_styles.UNIFIED_STATUS.LOCK")
-		(var statusBlockText:str = "	isReceived		? 'IDS_BATTLEPASS_STATUS_REWARD_TAKEN' :
-										isLevelLocked	? 'IDS_BATTLEPASS_LEVEL_STATUS_LOCKED'
-														: 'IDS_BATTLEPASS_CARD_STATUS_LOCK'")
-	)
-	(dispatch startShow on='addedToStage')
-	(bind name "'BattlePassRewardRenderer' + rewardId")
 
-	
+		(var statusBlockText:str = "	battlePassRewardState.isReceived	? 'IDS_BATTLEPASS_STATUS_REWARD_TAKEN' :
+										isLevelLocked						? 'IDS_BATTLEPASS_LEVEL_STATUS_LOCKED'
+																			: 'IDS_BATTLEPASS_CARD_STATUS_LOCK'")
+
+		(var warningStatus:number = "	battlePassType.type != battlePassReward.type &&
+										battlePassType.isFree								? BP_CHOICE_BUTTON_WARNING.LOCKED_BY_TYPE_AND_LEVEL :
+										!isLevelCompleted									? BP_CHOICE_BUTTON_WARNING.LOCKED_BY_LEVEL
+																							: BP_CHOICE_BUTTON_WARNING.LOCKED_BY_BONUSES")
+	)
+	(bind name "'BattlePassRewardRenderer' + battlePassReward.rewardId")
+
 	(block
-		(macro DETAILED_CARD_ELEMENTS_APPEAR_ANIMATION_BY_ID "rewardId" 0)
-		(style (bind marginBottom "isStatusBlockVisible || isPointsCounterBlockVisible ? M : 0"))
-		(element RewardTitle
-			_rewardEntityId = "rewardId"
+		(bind visible "isMultipleReward && !battlePassRewardState.isReceived && !battlePassType.isPaidEnhanced")
+		(style (marginBottom = "{720:M, 1080:L}"))
+
+		(tf
+			(class $TextDefaultBold36NM)
+			(style
+				(marginBottom = "{720:SXS, 1080:MS}")
+				(alpha = "TA")
+			)
+			(text = 'IDS_BATTLEPASS_REWARDS_CHOICE')
+		)
+
+		(block
+			(controller $Instance renderer='DefaultButton'
+				(bind enabled "isMultipleReward")
+				(args
+					_width = 150px
+					_name = 'choose_multiple_reward_btn'
+					_label = 'IDS_CHOOSE'
+					_enabled = "battlePassRewardState.isAvailable"
+					_focusIndex = 0
+					_methods = "[
+						{
+							type: 'inputMapping.onRequest',
+							name: 'rewardMultipleClaimConfirm',
+							args: { _battlePassRewardEntityId: _battlePassRewardEntityId }
+						}
+					]"
+				)
+			)
+			(controller $Tooltip
+				(bind enabled "!battlePassRewardState.isAvailable")
+				(renderer='SimpleStatusTooltip')
+				(args
+					_text = "'IDS_BATTLEPASS_REWARDS_CHOICE_WARNING_' + warningStatus"
+					_unifiedStatus = "SC.Ui_styles.UNIFIED_STATUS.NEGATIVE"
+				)
+				(macro DEFAULT_TOOLTIP_BEHAVIOUR)
+			)
 		)
 	)
 
 	
 	(block
-		(macro DETAILED_CARD_ELEMENTS_APPEAR_ANIMATION_BY_ID "rewardId" 1)
+		(macro DETAILED_CARD_ELEMENTS_APPEAR_ANIMATION_BY_ID "battlePassReward.rewardId" 0)
+		(style (bind marginBottom "isStatusBlockVisible || isPointsCounterBlockVisible ? MS : 0"))
+
+		(element RewardTitle
+			_rewardEntityId = "battlePassReward.rewardId"
+		)
+
+		(hblock
+			(style (bind marginTop "rewardComponent.amount ? M : 0"))
+			(block
+				(controller $Instance renderer='BattlePassRewardCount'
+					(bind enabled "rewardComponent.amount")
+					(args
+						_rewardComponent = "rewardComponent"
+					)
+				)
+			)
+
+			(block
+				(bind visible "rewardComponent.params.isLinkAvailable")
+				(style
+					(height = 20px)
+					(marginTop = "-XS")
+					(paddingLeft = "S")
+					(paddingRight = "S")
+				)
+				(element VerticalDivider)
+			)
+
+			(block
+				(controller $Instance renderer='LinkWithIcon'
+					(bind enabled "rewardComponent.params.isLinkAvailable")
+					(args
+						_label = 'IDS_LOOTBOX_REWARDS_PROBABILITIES'
+						_methods = "[
+							{
+								type: 'inputMapping.onAction',
+								name: 'navigateTo',
+								args: {
+									route: SC.Ui_windows.ROUTE.OVERLAY_BROWSER,
+									data: {
+										url: SC.Ui_windows.GUI_URL.LOOTBOX_CONTENTS,
+										lootboxId: rewardComponent.id
+									}
+								}
+							}
+						]"
+					)
+				)
+			)
+		)
+	)
+
+
+	
+	(block
+		(macro DETAILED_CARD_ELEMENTS_APPEAR_ANIMATION_BY_ID "battlePassReward.rewardId" 1)
 		(controller $Instance renderer='StatusLine'
 			(bind enabled "isStatusBlockVisible")
 			(args
-				_unifiedStatus = "unifiedStatus"
-				_text = "statusBlockText"
 				_textClass = '$TextDefault20NM'
+				_text = "statusBlockText"
+				_unifiedStatus = "battlePassRewardState.isReceived	? SC.Ui_styles.UNIFIED_STATUS.CHECK
+																	: SC.Ui_styles.UNIFIED_STATUS.LOCK"
 			)
 		)
 	)
 
 	
 	(hblock
-		(macro DETAILED_CARD_ELEMENTS_APPEAR_ANIMATION_BY_ID "rewardId" 2)
+		(macro DETAILED_CARD_ELEMENTS_APPEAR_ANIMATION_BY_ID "battlePassReward.rewardId" 2)
 		(bind visible "isPointsCounterBlockVisible")
 
 		(tf
@@ -1319,8 +1430,11 @@
 			(controller $Instance renderer='PriceTag'
 				(bind enabled "isPointsCounterBlockVisible")
 				(args
-					_priceInfo = "{finalPrice: maxPoints - curPoints, currency: SC.Common.CURRENCIES.BP_POINTS}"
 					_size = "SIZE.MEDIUM"
+					_priceInfo = "{
+						finalPrice: battlePassLevel.pointsPerLevel - battlePassLevel.currentPoints,
+						currency: SC.Common.CURRENCIES.BP_POINTS
+					}"
 				)
 			)
 
@@ -1340,32 +1454,395 @@
 		(var battlePassEntity:dhEntity = "getSingleEntity(CC.battlePass)")
 		(var finishTime:number = "battlePassEntity.battlePass.finishTime ?: 0" (event "battlePassEntity.battlePass.evChanged"))
 
-		(macro SERVER_TIME_SCOPE)
-		(macro COUNTDOWN_SCOPE "'formattedFinishTime'" "finishTime" "'HIGHEST,WITH_DAYS'")
+		(struct serverTime = SERVER_TIME())
+		(struct formattedFinishTime = COUNTDOWN(_time = "finishTime" _serverTime = "serverTime.value" _format = "'HIGHEST,WITH_DAYS'"))
 
-		(var timeLeft:number = "finishTime - serverTime")
-		(var unifiedStatus:str = "timeLeft < DAY_IN_SEC	? SC.Ui_styles.UNIFIED_STATUS.DATE_ATTENTION
-														: SC.Ui_styles.UNIFIED_STATUS.DATE")
+		(var unifiedStatus:str = "finishTime - serverTime.value < DAY_IN_SEC	? SC.Ui_styles.UNIFIED_STATUS.DATE_ATTENTION
+																				: SC.Ui_styles.UNIFIED_STATUS.DATE")
 	)
 	(name = 'battlepass_timer')
 
 	(element StatusLine
-		_text = "subst('IDS_SUBST_BATTLEPASS_STATUS_TIME', [], { timeLeft: formattedFinishTime })"
+		_text = "subst('IDS_SUBST_BATTLEPASS_STATUS_TIME', [], { timeLeft: formattedFinishTime.value })"
 		_unifiedStatus  = "unifiedStatus"
 	)
 )
 
-(def macro SPECIAL_LEVEL_ELEMENTS_APPEAR_ANIMATION (_id:expression, _positionY:number)
-	(style (bind alpha "_id ? 0 : 1" init=false))
+(def element MultipleReward (	_collection:dhCollection = null,
+								_isLevelFixed:bool = false,
+								_isFreeBpType:bool = false,
+								_observableReward:number = 0)
+	(scope
+		(event evShowIconCheck)
+		(event evSelectedStateDisabled)
 
-	(controller $Animation
-		(bindcall play  delay = "0.1 + _positionY * 0.075"
-						duration = 0.15
-						from = "{alpha: 0}"
-						to = "{alpha: 1}"
-						action = "kill"
-						easing = "Easing.quad_out"
-						(bind trigger "_id")
+		(struct stageSize = STAGE_SIZE())
+		(struct scale = PULL_BP_ASSET_SCALE(_stageWidth = "stageSize.width"))
+
+		(struct mouseHandler = MOUSE_HANDLER())
+		(struct mouseHandlerLeft = MOUSE_HANDLER())
+		(struct mouseHandlerRight = MOUSE_HANDLER())
+
+		(struct multipleRewardState = PULL_BATTLEPASS_MULTIPLE_REWARD_STATE(_collection="_collection"))
+		(var isFirstClaimed:bool = "multipleRewardState.firstRewardState == SC.Common.BATTLEPASS_REWARD_STATE.CLAIMED")
+		(var isSecondClaimed:bool = "multipleRewardState.secondRewardState == SC.Common.BATTLEPASS_REWARD_STATE.CLAIMED")
+
+		(var isFirstSelected:bool = "_collection[0].id == _observableReward")
+		(var isSecondSelected:bool = "_collection[1].id == _observableReward")
+
+		(struct activeTip = PULL_ACTIVE_GUIDING_TIP())
+		(struct checkedTipId = SAFE_CHECK_ACTIVE_TIP_ID(
+				_tipId = "activeTip.tipId"
+				_validValues = "[ SC.Context_guiding_tip.TIP_TYPE.BATTLEPASS_MULTIPLE_REWARD ]"
+			)
+		)
+	)
+	(dispatch evSelectedStateDisabled (bind trigger "!isFirstSelected && !isSecondSelected"))
+
+	(class $Fullsize)
+
+	(dispatch
+		evShowIconCheck
+		(bind enabled "multipleRewardState.areAllClaimed")
+		(event "multipleRewardState.firstRewardComponent.evRewardStateChanged")
+		(event "multipleRewardState.secondRewardComponent.evRewardStateChanged")
+	)
+
+	(macro STRUCT_MOUSE_DISPATCHER
+		_mouseHandler = "mouseHandler"
+	)
+
+	(block
+		(class $Fullsize)
+
+		(macro STRUCT_MOUSE_DISPATCHER
+			_mouseHandler = "mouseHandlerLeft"
+		)
+
+		(bindcall externalCall
+			'inputMapping.onAction'
+			"['BattlePassProxyUSS.updateObservableReward', { battlePassRewardEntityId: _collection[0].id }]"
+			init=false
+			watch=false
+			on='leftClick'
+		)
+
+		(element BattlePassMultipleRewardItem
+			_battlePassRewardEntityId = "_collection[0].id"
+			_observableReward = "_observableReward"
+			_isLevelFixed = "_isLevelFixed"
+			_areAllClaimed = "multipleRewardState.areAllClaimed"
+		)
+
+		(block
+			(style
+				(position = "absolute")
+				(rotation = 30)
+				(backgroundColor = "NO_COLOR")
+				(bind top "-80px * scale.value")
+				(bind left "-8px * scale.value")
+				(bind width "150px * scale.value")
+				(bind height "230px * scale.value")
+			)
+			(isMask = true)
+
+			(macro BATTLEPASS_MULTIPLE_REWARD_ANIM
+				_isFirstClaimed = "isFirstClaimed"
+				_isSecondClaimed = "isSecondClaimed"
+				_isFirstSelected = "isFirstSelected"
+				_isSecondSelected = "isSecondSelected"
+				_rightTrigger = "mouseHandlerRight.rollOver"
+				_leftTrigger = "mouseHandlerLeft.rollOver"
+				_rollOver = "mouseHandler.rollOver"
+				_scale = "scale.value"
+			)
+		)
+	)
+
+	(block
+		(class $FullsizeAbsolute)
+
+		(macro STRUCT_MOUSE_DISPATCHER
+			_mouseHandler = "mouseHandlerRight"
+		)
+
+		(bindcall externalCall
+			'inputMapping.onAction'
+			"['BattlePassProxyUSS.updateObservableReward', { battlePassRewardEntityId: _collection[1].id }]"
+			init=false
+			watch=false
+			on='leftClick'
+		)
+
+		(element BattlePassMultipleRewardItem
+			_battlePassRewardEntityId = "_collection[1].id"
+			_observableReward = "_observableReward"
+			_isLevelFixed = "_isLevelFixed"
+			_areAllClaimed = "multipleRewardState.areAllClaimed"
+		)
+
+		(block
+			(style
+				(position = "absolute")
+				(rotation = 30)
+				(backgroundColor = "NO_COLOR")
+				(bind top "-40px * scale.value")
+				(bind right "-142px * scale.value")
+				(bind width "150px * scale.value")
+				(bind height "230px * scale.value")
+			)
+			(isMask = true)
+
+			(macro BATTLEPASS_MULTIPLE_REWARD_ANIM
+				_isFirstClaimed = "isFirstClaimed"
+				_isSecondClaimed = "isSecondClaimed"
+				_isFirstSelected = "isFirstSelected"
+				_isSecondSelected = "isSecondSelected"
+				_rightTrigger = "mouseHandlerRight.rollOver"
+				_leftTrigger = "mouseHandlerLeft.rollOver"
+				_rollOver = "mouseHandler.rollOver"
+				_scale = "scale.value"
+			)
+		)
+	)
+
+	(block
+		(class $FullsizeAbsolute)
+		(style
+			(hitTest = false)
+			(backgroundSize = "contain")
+			(bind backgroundImage "_isFreeBpType	? 'url:../sse/battlepass/multiple_reward_divider_blue.png'
+													: 'url:../sse/battlepass/multiple_reward_divider_orange.png'")
+			(bind alpha "multipleRewardState.areAllClaimed ? 0.5 : 1")
+			(filters
+				(colorMatrix
+					(bind matrix "multipleRewardState.areAllClaimed ? [ 0, -50, 0, -15 ] : [0, 0, 0, 0]")
+				)
+			)
+		)
+
+		(macro BATTLEPASS_MULTIPLE_REWARD_ANIM
+			_isFirstClaimed = "isFirstClaimed"
+			_isSecondClaimed = "isSecondClaimed"
+			_isFirstSelected = "isFirstSelected"
+			_isSecondSelected = "isSecondSelected"
+			_rightTrigger = "mouseHandlerRight.rollOver"
+			_leftTrigger = "mouseHandlerLeft.rollOver"
+			_rollOver = "mouseHandler.rollOver"
+			_scale = "scale.value"
+		)
+	)
+
+	(block
+		(bind visible "multipleRewardState.areAllClaimed")
+
+		(class $FullsizeAbsolute)
+		(style
+			(hitTest = false)
+			(align = "center|middle")
+		)
+
+		(block
+			(style
+				(width = 48px)
+				(height = 48px)
+				(pivotX = 50%)
+				(pivotY = 50%)
+				(backgroundImage = 'url:../reward_categories/icon_check.png')
+			)
+
+			(controller $Animation
+				(bindcall play
+					duration = 0.5
+					from = "{ visualScaleX: 2, visualScaleY: 2, alpha: 0 }"
+					to =  "{ visualScaleX: 1, visualScaleY: 1, alpha: 1 }"
+					(event "evShowIconCheck")
+				)
+			)
+		)
+	)
+
+	(controller $Instance renderer='GuidingTipHub'
+		(bind enabled "checkedTipId.value && activeTip.targetId == _collection[1].id")
+		(args
+			_tipId =			"checkedTipId.value"
+			_tipPositioning =	"TIP_POSITION_TOP"
+			_offsetY =			"MS"
+			_pointerOffset =	"MS"
+			_modalWindowName =	"SC.Ui_windows.MODAL.BATTLE_PASS_MAIN"
+		)
+	)
+)
+
+(def element BattlePassMultipleRewardItem (	_battlePassRewardEntityId:number = 0,
+											_observableReward:number = 0,
+											_isLevelFixed:bool = false,
+											_areAllClaimed:bool = false)
+	(scope
+		(var isSelected:bool = "_battlePassRewardEntityId == getEntity(_observableReward).id")
+	)
+	(class $Fullsize)
+
+	(element BattlePassRewardItem
+		_isMultipleReward = true
+		_isAmountVisible = false
+		_battlePassRewardEntityId = "_battlePassRewardEntityId"
+		_isLevelFixed = "_isLevelFixed"
+		_areAllClaimed = "_areAllClaimed"
+		_isSelected = "isSelected"
+		_soundSet = "'button_battlepass_multi_reward'"
+		_observableReward = "_observableReward"
+	)
+)
+
+(def element BattlePassRewardItem (	_battlePassRewardEntityId:number = 0,
+									_observableReward:number = 0,
+									_isAmountVisible:bool = true,
+									_isLevelFixed:bool = false,
+									_areAllClaimed:bool = false,
+									_soundSet:str = 'button_battlepass_reward')
+	(scope
+		(event evShowIconCheck)
+		(struct mouseHandler = MOUSE_HANDLER())
+
+		(struct battlePassReward = PULL_BATTLEPASS_REWARD_INFO(_entityId = "_battlePassRewardEntityId"))
+		(struct battlePassRewardState = PULL_BATTLEPASS_REWARD_STATE(_rewardState = "battlePassReward.rewardState"))
+
+		(var rewardComponent:dhComponent = "getEntity(battlePassReward.rewardId).rewardComponent")
+		(var reward:dict = "{	id:			rewardComponent.id,
+								amount:		rewardComponent.amount,
+								name:		rewardComponent.name,
+								type:		rewardComponent.type,
+								subtype:	rewardComponent.subtype,
+								params:		rewardComponent.params,
+								isPRMP:		rewardComponent.isPRMP }")
+
+		(var isSelected:bool = "_battlePassRewardEntityId == _observableReward")
+		(var isIconCheckEnabled:bool = "battlePassRewardState.isReceived && !_areAllClaimed")
+		(var state:number = "	isSelected				? SC.Ui_styles.BUTTON_STATE.SELECTED :
+								mouseHandler.mouseDown	? SC.Ui_styles.BUTTON_STATE.DOWN :
+								mouseHandler.rollOver	? SC.Ui_styles.BUTTON_STATE.OVER :
+								isIconCheckEnabled		? SC.Ui_styles.BUTTON_STATE.DISABLED
+														: SC.Ui_styles.BUTTON_STATE.UP")
+		(var cellAlpha:number = "CELL_ALPHA[state]")
+
+		(struct stageSize = STAGE_SIZE())
+		(struct scale = PULL_BP_ASSET_SCALE(_stageWidth = "stageSize.width"))
+		(struct animation = PULL_ANIMATION_SIZE(_scale = "scale.value"))
+	)
+	(dispatch evShowIconCheck (bind enabled "isIconCheckEnabled") (event "battlePassReward.component.evRewardStateChanged"))
+	(class $Fullsize)
+	(style
+		(align = "center|middle")
+		(backgroundColor = "NO_COLOR")
+	)
+
+	(macro STRUCT_MOUSE_DISPATCHER
+		_mouseHandler = "mouseHandler"
+	)
+
+	(macro STRUCT_SOUND_HANDLER
+		_mouseHandler = "mouseHandler"
+		_soundSet = "_soundSet"
+	)
+
+	(block
+		(class $FullsizeAbsolute)
+		(style
+			(hitTest = false)
+			(backgroundColor = "SC.Ui_styles.SERVICE_COLORS.WHITE")
+			(borderRadius = "XS")
+			(alpha = "cellAlpha")
+		)
+		(macro DEFAULT_CONTROL_STATE_ANIMATION_ALPHA
+			_trigger = "state"
+			_alpha = "cellAlpha"
+		)
+	)
+
+	(block
+		(bind visible "isSelected")
+		(style
+			(hitTest = false)
+			(position = "absolute")
+			(backgroundSize = "cover")
+			(bind top "animation.offset")
+			(bind left "animation.offset")
+			(bind width "animation.size")
+			(bind height "animation.size")
+			(bind backgroundImage "isSelected ? BP_SPINE_PATH + 'reward_states/selected.skel' : ''")
+		)
+		(controller $Spine
+			(bind enabled "isSelected")
+		)
+	)
+
+	(element RewardItem
+		_isBattlePassSmallIconView = true
+		_isAmountVisible = "_isAmountVisible"
+		_reward = "reward"
+		_isUnavailable = "battlePassRewardState.isReceived"
+		_isReceived = "battlePassRewardState.isReceived && _isLevelFixed && !_areAllClaimed"
+	)
+
+	(block
+		(bind visible "isIconCheckEnabled")
+
+		(class $FullsizeAbsolute)
+		(style
+			(hitTest = false)
+			(align = "center|middle")
+		)
+
+		(block
+			(style
+				(width = 48px)
+				(height = 48px)
+				(pivotX = 50%)
+				(pivotY = 50%)
+				(backgroundImage = 'url:../reward_categories/icon_check.png')
+			)
+
+			(controller $Animation
+				(bindcall play
+					duration = 0.5
+					from = "{ visualScaleX: 2, visualScaleY: 2, alpha: 0 }"
+					to =  "{ visualScaleX: 1, visualScaleY: 1, alpha: 1 }"
+					(event "evShowIconCheck")
+				)
+			)
+		)
+	)
+)
+
+(def element BattlePassRewardCount (_rewardComponent:dhComponent)
+	(scope
+		(struct rewardSubtype = CORRECT_REWARD_RESOURCE_SUBNAME(_subtype = "_rewardComponent.subtype"))
+		(var isPrem:bool = "rewardSubtype.value == 'mk_premium'")
+		(var hasPriceTag:bool = "rewardSubtype.value in REWARD_RESOURCE_ELEMENT && !isPrem")
+	)
+	(style (flow = "horizontal"))
+
+	(tf
+		(class $TextDefaultNM)
+		(style
+			(alpha = "TA")
+			(marginRight = "S")
+		)
+		(text = 'IDS_COUNT')
+	)
+	(block
+		(controller $Instance renderer='PriceTag'
+			(bind enabled "hasPriceTag")
+			(args
+				_priceInfo = "{ finalPrice: _rewardComponent.amount, currency: _rewardComponent.subtype }"
+			)
+		)
+		(tf
+			(bind visible "!hasPriceTag")
+			(class $TextDefaultBoldNM)
+			(style (alpha = "TA"))
+			(bind text "formatSeparator(isPrem ? _rewardComponent.params.text : _rewardComponent.amount)")
 		)
 	)
 )
