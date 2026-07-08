@@ -1316,7 +1316,7 @@
 				(args
 					_width = 150px
 					_name = 'choose_multiple_reward_btn'
-					_label = 'IDS_CHOOSE'
+					_label = 'IDS_BATTLEPASS_REWARDS_CLAIM_BUTTON'
 					_enabled = "battlePassRewardState.isAvailable"
 					_focusIndex = 0
 					_methods = "[
