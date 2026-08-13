@@ -8,5 +8,6 @@
     </meta>
     <elements>
         <element action="replace" target="ModalWindowBattlePassMain">MxModalWindowBattlePassMain</element>
+        <element action="replace" target="SagaMainProgressBarContent">MxSagaMainProgressBarContent</element>
     </elements>
 </meta.xml>
