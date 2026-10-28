@@ -259,7 +259,7 @@
 
 		(block
 			(dispatch evForceScrollToIndex dir="EventDirection.DOWN" (event "evTakeRewardsButtonClicked"))
-			(dispatch evTakeRewardClicked dir="EventDirection.DOWN" delay=0.5 (event "evForceScrollToIndex") (event "battlePassComponent.evStartRewardClaimAnimation"))
+			(dispatch evTakeRewardClicked dir="EventDirection.DOWN" delay=0.5 (event "battlePassComponent.evStartRewardClaimAnimation"))
 			(dispatch evOpenModal delay="REWARD_PROGRESS_ANIMATION_TIME" (event "evTakeRewardClicked"))
 			(bindcall externalCall
 				"'inputMapping.onRequest'"
